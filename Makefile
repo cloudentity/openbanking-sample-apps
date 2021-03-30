@@ -5,11 +5,11 @@ export COMPOSE_DOCKER_CLI_BUILD=1
 
 .PHONY: build
 build:
-	docker-compose -f docker-compose.build.yaml build
+	docker-compose build
 
-.PHONY: run-dev
-run-dev:
-	docker-compose -f docker-compose.yaml -f docker-compose.build.yaml up -d
+.PHONY: run
+run:
+	docker-compose up -d
 
 .PHONY: lint
 lint:

@@ -22,6 +22,9 @@ services:
       - KEY_FILE=/tpp_key.pem
       - ROOT_CA=/ca.pem
       - BANK_URL=http://bank:8070
+    build:
+      context: .
+      dockerfile: tpp/Dockerfile
 
   financroo:
     image: cloudentity/openbanking-sample-apps-tpp-financroo:latest
@@ -40,6 +43,9 @@ services:
       - ACP_URL=https://localhost:8443
       - ACP_INTERNAL_URL=https://localhost:8443
       - APP_HOST=localhost
+    build:
+      context: .
+      dockerfile: financroo/Dockerfile
 
   bank:
     image: cloudentity/openbanking-sample-apps-bank:latest
@@ -58,3 +64,6 @@ services:
       - CERT_FILE=/bank_cert.pem
       - KEY_FILE=/bank_key.pem
       - ROOT_CA=/ca.pem
+    build:
+      context: .
+      dockerfile: bank/Dockerfile
