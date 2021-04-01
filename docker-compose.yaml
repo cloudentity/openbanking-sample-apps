@@ -1,0 +1,69 @@
+version: "3.0"
+
+services:
+  tpp:
+    image: cloudentity/openbanking-sample-apps-tpp-developer:latest
+    container_name: tpp
+    restart: always
+    ports:
+      - "8090:8090"
+    volumes:
+      - ./data/ca.pem:/ca.pem
+      - ./data/tpp_cert.pem:/tpp_cert.pem
+      - ./data/tpp_key.pem:/tpp_key.pem
+    environment:
+      - CLIENT_ID=bugkgm23g9kregtu051g
+      - AUTHORIZE_URL=https://localhost:8443/default/openbanking/oauth2/authorize
+      - TOKEN_URL=https://localhost:8443/default/openbanking/oauth2/token
+      - ISSUER_URL=https://localhost:8443/default/openbanking
+      - USERINFO_URL=https://localhost:8443/default/openbanking/userinfo
+      - REDIRECT_URL=https://localhost:8090/callback
+      - CERT_FILE=/tpp_cert.pem
+      - KEY_FILE=/tpp_key.pem
+      - ROOT_CA=/ca.pem
+      - BANK_URL=http://bank:8070
+    build:
+      context: .
+      dockerfile: tpp/Dockerfile
+
+  financroo:
+    image: cloudentity/openbanking-sample-apps-tpp-financroo:latest
+    container_name: financroo
+    restart: always
+    ports:
+      - "8091:8091"
+    volumes:
+      - ./data:/certs
+      - ./financroo/data:/app/data
+    environment:
+      - UI_URL=https://localhost:8091
+      - CERT_FILE=/certs/tpp_cert.pem
+      - KEY_FILE=/certs/tpp_key.pem
+      - DB_FILE=/app/data/my.db
+      - ACP_URL=https://localhost:8443
+      - ACP_INTERNAL_URL=https://localhost:8443
+      - APP_HOST=localhost
+    build:
+      context: .
+      dockerfile: financroo/Dockerfile
+
+  bank:
+    image: cloudentity/openbanking-sample-apps-bank:latest
+    container_name: bank
+    restart: always
+    ports:
+      - "8070:8070"
+    volumes:
+      - ./data/ca.pem:/ca.pem
+      - ./data/bank_cert.pem:/bank_cert.pem
+      - ./data/bank_key.pem:/bank_key.pem
+      - ./bank/data:/app/data
+    environment:
+      - CLIENT_ID=bukj5p6k7qdmm5ppbi4g
+      - ISSUER_URL=https://localhost:8443/default/openbanking
+      - CERT_FILE=/bank_cert.pem
+      - KEY_FILE=/bank_key.pem
+      - ROOT_CA=/ca.pem
+    build:
+      context: .
+      dockerfile: bank/Dockerfile
