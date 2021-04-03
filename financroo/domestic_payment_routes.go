@@ -3,15 +3,23 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/cloudentity/acp-client-go/client/openbanking"
 	"github.com/cloudentity/acp-client-go/models"
 	"github.com/gin-gonic/gin"
 	"github.com/go-openapi/strfmt"
+	"github.com/google/uuid"
 )
 
 type CreateDomesticPaymentRequest struct {
- // todo require minimal amount of data to create domestic payment
+	Amount               string `json:"amount" binding:"required"`
+	BankID               string `json:"bank_id" binding:"required"`
+	AccountID            string `json:"account_id" binding:"required"`
+	PayeeAccountName     string `json:"payee_account_name" binding:"required"`
+	PayeeAccountNumber   string `json:"payee_account_number" binding:"required"`
+	PayeeAccountSortCode string `json:"payee_account_sort_code" binding:"required"`
+	PaymentReference     string `json:"payment_reference" binding:"required"`
 }
 
 func (s *Server) CreateDomesticPayment() func(*gin.Context) {
@@ -43,7 +51,18 @@ func (s *Server) CreateDomesticPayment() func(*gin.Context) {
 			c.String(http.StatusBadRequest, fmt.Sprintf("client not configured for bank: %s", bankID))
 		}
 
-		// todo create consent request
+		authorisationType := "Single"
+		account := models.DomesticPaymentConsentCreditorAccount{
+			Identification:          &paymentRequest.PayeeAccountNumber,
+			Name:                    &paymentRequest.PayeeAccountName,
+			SchemeName:              &authorisationType, // todo some schema name??
+		}
+		debtorAccount := models.DomesticPaymentConsentDebtorAccount{
+			Identification: &paymentRequest.AccountID,
+			SchemeName:     &authorisationType, // todo some schema name??
+		}
+		id := uuid.New().String()
+		currency := "usd"
 		if registerResponse, err = clients.AcpClient.Openbanking.CreateDomesticPaymentConsent(
 			openbanking.NewCreateDomesticPaymentConsentParams().
 				WithTid(clients.AcpClient.TenantID).
@@ -51,22 +70,20 @@ func (s *Server) CreateDomesticPayment() func(*gin.Context) {
 				WithRequest(&models.DomesticPaymentConsentRequest{
 					Data: &models.DomesticPaymentConsentRequestData{
 						Authorisation:     &models.DomesticPaymentConsentAuthorisation{
-							AuthorisationType:  nil,
-							CompletionDateTime: strfmt.DateTime{},
+							AuthorisationType:  &authorisationType,
+							CompletionDateTime: strfmt.DateTime(time.Now().Add(time.Hour)),
 						},
 						Initiation:        &models.DomesticPaymentConsentDataInitiation{
-							CreditorAccount:           nil,
-							CreditorPostalAddress:     nil,
-							DebtorAccount:             nil,
-							EndToEndIdentification:    nil,
-							InstructedAmount:          nil,
-							InstructionIdentification: nil,
-							LocalInstrument:           "",
-							RemittanceInformation:     nil,
-							SupplementaryData:         nil,
+							CreditorAccount:           &account,
+							DebtorAccount:             &debtorAccount,
+							EndToEndIdentification:    &id,
+							InstructedAmount:          &models.DomesticPaymentConsentInstructedAmount{
+								Amount:   &paymentRequest.Amount,
+								Currency: &currency,
+							},
+							InstructionIdentification: &id,
 						},
 						ReadRefundAccount: "No",
-						SCASupportData:    nil,
 					},
 				}),
 			nil,
