@@ -104,6 +104,8 @@ func (s *Server) Start() error {
 	r.GET("/api/callback", s.ConnectBankCallback())
 	r.DELETE("/api/disconnect/:bankId", s.DisconnectBank())
 
+	r.POST("/api/domestic-payment", s.CreateDomesticPayment())
+
 	r.GET("/api/accounts", s.GetAccounts())
 	r.GET("/api/transactions", s.GetTransactions())
 	r.GET("/api/balances", s.GetBalances())
