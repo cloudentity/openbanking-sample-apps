@@ -47,9 +47,6 @@ func (s *Server) ConnectBank() func(*gin.Context) {
 			clients            Clients
 			ok                 bool
 			registerResponse   *openbanking.CreateAccountAccessConsentRequestCreated
-			encodedCookieValue string
-			loginURL           string
-			data               = gin.H{}
 			connectRequest     = ConnectBankRequest{}
 			user               User
 			err                error
@@ -84,7 +81,7 @@ func (s *Server) ConnectBank() func(*gin.Context) {
 			return
 		}
 
-		s.CreateConsentResponse(c, bankID, registerResponse.Payload.Data.ConsentID, user, loginURL, err, clients, encodedCookieValue, data)
+		s.CreateConsentResponse(c, bankID, registerResponse.Payload.Data.ConsentID, user, clients)
 	}
 }
 

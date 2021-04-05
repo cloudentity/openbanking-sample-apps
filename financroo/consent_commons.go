@@ -9,12 +9,18 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (s *Server) CreateConsentResponse(c *gin.Context, bankID BankID, consentID string, user User, loginURL string, err error, clients Clients, encodedCookieValue string, data gin.H) {
-	app := AppStorage{
-		BankID:   bankID,
-		IntentID: consentID,
-		Sub:      user.Sub,
-	}
+func (s *Server) CreateConsentResponse(c *gin.Context, bankID BankID, consentID string, user User, clients Clients) {
+	var (
+		loginURL string
+		err      error
+		encodedCookieValue string
+		app =    AppStorage{
+			BankID:   bankID,
+			IntentID: consentID,
+			Sub:      user.Sub,
+		}
+		data = gin.H{}
+	)
 
 	if loginURL, app.CSRF, err = clients.AcpClient.AuthorizeURL(
 		acpclient.WithOpenbankingIntentID(app.IntentID, []string{"urn:openbanking:psd2:sca"}),

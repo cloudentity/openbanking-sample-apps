@@ -28,9 +28,6 @@ func (s *Server) CreateDomesticPaymentConsent() func(*gin.Context) {
 			clients               Clients
 			ok                    bool
 			registerResponse      *openbanking.CreateDomesticPaymentConsentCreated
-			encodedCookieValue    string
-			loginURL              string
-			data                  = gin.H{}
 			paymentConsentRequest = CreateDomesticPaymentConsentRequest{}
 			user                  User
 			err                   error
@@ -92,6 +89,6 @@ func (s *Server) CreateDomesticPaymentConsent() func(*gin.Context) {
 			return
 		}
 
-		s.CreateConsentResponse(c, paymentConsentRequest.BankID, registerResponse.Payload.Data.ConsentID, user, loginURL, err, clients, encodedCookieValue, data)
+		s.CreateConsentResponse(c, paymentConsentRequest.BankID, registerResponse.Payload.Data.ConsentID, user, clients)
 	}
 }
