@@ -40,7 +40,7 @@ func NewAcpClient(c Config, cfg BankConfig) (acpclient.Client, error) {
 		RedirectURL:                 redirectURL,
 		RequestObjectSigningKeyFile: cfg.AcpClient.KeyFile,
 		RequestObjectExpiration:     &requestObjectExpiration,
-		Scopes:                      []string{"accounts", "openid", "offline_access"},
+		Scopes:                      []string{"accounts", "payments", "openid", "offline_access"},
 		Timeout:                     cfg.AcpClient.Timeout,
 		CertFile:                    cfg.AcpClient.CertFile,
 		KeyFile:                     cfg.AcpClient.KeyFile,

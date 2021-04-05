@@ -78,7 +78,7 @@ export default function InvestmentsContribute() {
   const [account, setAccount] = useState("");
   const [alert, setAlert] = useState("");
 
-  const [isProgress] = useState(false);
+  const [isProgress, setProgress] = useState(false);
 
   const {
     isLoading: fetchBanksProgress,
@@ -121,8 +121,22 @@ export default function InvestmentsContribute() {
 
   function handleNext() {
     if (step === 2) {
-      // FIXME request with transaction
-      history.push("/investments/contribute/mock-id/success");
+      setProgress(true);
+
+      api.domesticPaymentConsent({
+        amount: amount,
+        bank_id: bank,
+        account_id: account,
+        payee_account_name: "financroo-investment",
+        payee_account_number: "12345678",
+        payee_account_sort_code: "123456",
+        payment_reference: "financroo-investment-123"
+      }).then(res => {
+        window.location.href = res.login_url
+      }).finally(() => {
+        setProgress(false);
+      })
+      //history.push("/investments/contribute/mock-id/success");
     } else {
       setStep((step) => step + 1);
     }
