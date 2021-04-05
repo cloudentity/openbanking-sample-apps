@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -56,10 +57,11 @@ func (s *Server) CreateDomesticPaymentConsent() func(*gin.Context) {
 		}
 		debtorAccount := models.DomesticPaymentConsentDebtorAccount{
 			Identification: &paymentConsentRequest.AccountID,
+			Name: "myAccount", // todo
 			SchemeName:     &schema,
 		}
-		id := uuid.New().String()
-		currency := "usd"
+		id := uuid.New().String()[:10]
+		currency := "USD"
 		if registerResponse, err = clients.AcpClient.Openbanking.CreateDomesticPaymentConsent(
 			openbanking.NewCreateDomesticPaymentConsentParams().
 				WithTid(clients.AcpClient.TenantID).
@@ -82,10 +84,12 @@ func (s *Server) CreateDomesticPaymentConsent() func(*gin.Context) {
 						},
 						ReadRefundAccount: "No",
 					},
+					Risk: &models.PaymentRisk{},
 				}),
 			nil,
 		); err != nil {
-			c.String(http.StatusBadRequest, fmt.Sprintf("failed to register domestic payment consent: %+v", err))
+			errJson, _ := json.Marshal(err) // todo error handling for error mapping
+			c.String(http.StatusBadRequest, fmt.Sprintf("failed to register domestic payment consent: %s", errJson))
 			return
 		}
 
