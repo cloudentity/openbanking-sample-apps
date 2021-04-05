@@ -9,7 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (s *Server) ConsentCreatedResponse(c *gin.Context, bankID BankID, consentID string, user User, loginURL string, err error, clients Clients, encodedCookieValue string, data gin.H) {
+func (s *Server) CreateConsentResponse(c *gin.Context, bankID BankID, consentID string, user User, loginURL string, err error, clients Clients, encodedCookieValue string, data gin.H) {
 	app := AppStorage{
 		BankID:   bankID,
 		IntentID: consentID,

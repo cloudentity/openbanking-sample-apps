@@ -84,7 +84,7 @@ func (s *Server) ConnectBank() func(*gin.Context) {
 			return
 		}
 
-		s.ConsentCreatedResponse(c, bankID, registerResponse.Payload.Data.ConsentID, user, loginURL, err, clients, encodedCookieValue, data)
+		s.CreateConsentResponse(c, bankID, registerResponse.Payload.Data.ConsentID, user, loginURL, err, clients, encodedCookieValue, data)
 	}
 }
 

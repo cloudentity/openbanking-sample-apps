@@ -12,9 +12,9 @@ import (
 	"github.com/google/uuid"
 )
 
-type CreateDomesticPaymentRequest struct {
+type CreateDomesticPaymentConsentRequest struct {
 	Amount               string `json:"amount" binding:"required"`
-	BankID               string `json:"bank_id" binding:"required"`
+	BankID               BankID `json:"bank_id" binding:"required"`
 	AccountID            string `json:"account_id" binding:"required"`
 	PayeeAccountName     string `json:"payee_account_name" binding:"required"`
 	PayeeAccountNumber   string `json:"payee_account_number" binding:"required"`
@@ -22,19 +22,18 @@ type CreateDomesticPaymentRequest struct {
 	PaymentReference     string `json:"payment_reference" binding:"required"`
 }
 
-func (s *Server) CreateDomesticPayment() func(*gin.Context) {
+func (s *Server) CreateDomesticPaymentConsent() func(*gin.Context) {
 	return func(c *gin.Context) {
 		var (
-			bankID             = BankID(c.Param("bankId"))
-			clients            Clients
-			ok                 bool
-			registerResponse   *openbanking.CreateDomesticPaymentConsentCreated
-			encodedCookieValue string
-			loginURL           string
-			data               = gin.H{}
-			paymentRequest     = CreateDomesticPaymentRequest{}
-			user               User
-			err                error
+			clients               Clients
+			ok                    bool
+			registerResponse      *openbanking.CreateDomesticPaymentConsentCreated
+			encodedCookieValue    string
+			loginURL              string
+			data                  = gin.H{}
+			paymentConsentRequest = CreateDomesticPaymentConsentRequest{}
+			user                  User
+			err                   error
 		)
 
 		if user, err = s.WithUser(c); err != nil {
@@ -42,24 +41,25 @@ func (s *Server) CreateDomesticPayment() func(*gin.Context) {
 			return
 		}
 
-		if err = c.BindJSON(&paymentRequest); err != nil {
+		if err = c.BindJSON(&paymentConsentRequest); err != nil {
 			c.String(http.StatusBadRequest, fmt.Sprintf("failed to parse request body: %+v", err))
 			return
 		}
 
-		if clients, ok = s.Clients[bankID]; !ok {
-			c.String(http.StatusBadRequest, fmt.Sprintf("client not configured for bank: %s", bankID))
+		if clients, ok = s.Clients[paymentConsentRequest.BankID]; !ok {
+			c.String(http.StatusBadRequest, fmt.Sprintf("client not configured for bank: %s", paymentConsentRequest.BankID))
 		}
 
+		schema := "UK.OBIE.SortCodeAccountNumber"
 		authorisationType := "Single"
 		account := models.DomesticPaymentConsentCreditorAccount{
-			Identification:          &paymentRequest.PayeeAccountNumber,
-			Name:                    &paymentRequest.PayeeAccountName,
-			SchemeName:              &authorisationType, // todo some schema name??
+			Identification:          &paymentConsentRequest.PayeeAccountNumber,
+			Name:                    &paymentConsentRequest.PayeeAccountName,
+			SchemeName:              &schema,
 		}
 		debtorAccount := models.DomesticPaymentConsentDebtorAccount{
-			Identification: &paymentRequest.AccountID,
-			SchemeName:     &authorisationType, // todo some schema name??
+			Identification: &paymentConsentRequest.AccountID,
+			SchemeName:     &schema,
 		}
 		id := uuid.New().String()
 		currency := "usd"
@@ -78,7 +78,7 @@ func (s *Server) CreateDomesticPayment() func(*gin.Context) {
 							DebtorAccount:             &debtorAccount,
 							EndToEndIdentification:    &id,
 							InstructedAmount:          &models.DomesticPaymentConsentInstructedAmount{
-								Amount:   &paymentRequest.Amount,
+								Amount:   &paymentConsentRequest.Amount,
 								Currency: &currency,
 							},
 							InstructionIdentification: &id,
@@ -92,6 +92,6 @@ func (s *Server) CreateDomesticPayment() func(*gin.Context) {
 			return
 		}
 
-		s.ConsentCreatedResponse(c, bankID, registerResponse.Payload.Data.ConsentID, user, loginURL, err, clients, encodedCookieValue, data)
+		s.CreateConsentResponse(c, paymentConsentRequest.BankID, registerResponse.Payload.Data.ConsentID, user, loginURL, err, clients, encodedCookieValue, data)
 	}
 }
