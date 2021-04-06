@@ -66,10 +66,10 @@ func (s *Server) ConnectBank() func(*gin.Context) {
 			c.String(http.StatusBadRequest, fmt.Sprintf("client not configured for bank: %s", bankID))
 		}
 
-		if registerResponse, err = clients.AcpClient.Openbanking.CreateAccountAccessConsentRequest(
+		if registerResponse, err = clients.AcpAccountsClient.Openbanking.CreateAccountAccessConsentRequest(
 			openbanking.NewCreateAccountAccessConsentRequestParams().
-				WithTid(clients.AcpClient.TenantID).
-				WithAid(clients.AcpClient.ServerID).
+				WithTid(clients.AcpAccountsClient.TenantID).
+				WithAid(clients.AcpAccountsClient.ServerID).
 				WithRequest(&models.AccountAccessConsentRequest{
 					Data: &models.AccountAccessConsentRequestData{
 						Permissions: connectRequest.Permissions,
@@ -81,7 +81,7 @@ func (s *Server) ConnectBank() func(*gin.Context) {
 			return
 		}
 
-		s.CreateConsentResponse(c, bankID, registerResponse.Payload.Data.ConsentID, user, clients)
+		s.CreateConsentResponse(c, bankID, registerResponse.Payload.Data.ConsentID, user, clients.AcpAccountsClient)
 	}
 }
 
@@ -116,7 +116,7 @@ func (s *Server) ConnectBankCallback() func(*gin.Context) {
 			c.String(http.StatusBadRequest, fmt.Sprintf("client not configured for bank: %s", appStorage.BankID))
 		}
 
-		if token, err = clients.AcpClient.Exchange(code, c.Query("state"), appStorage.CSRF); err != nil {
+		if token, err = clients.AcpAccountsClient.Exchange(code, c.Query("state"), appStorage.CSRF); err != nil {
 			c.String(http.StatusUnauthorized, fmt.Sprintf("failed to exchange code: %+v", err))
 			return
 		}

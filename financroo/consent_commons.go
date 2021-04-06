@@ -9,7 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (s *Server) CreateConsentResponse(c *gin.Context, bankID BankID, consentID string, user User, clients Clients) {
+func (s *Server) CreateConsentResponse(c *gin.Context, bankID BankID, consentID string, user User, client acpclient.Client) {
 	var (
 		loginURL string
 		err      error
@@ -22,7 +22,7 @@ func (s *Server) CreateConsentResponse(c *gin.Context, bankID BankID, consentID 
 		data = gin.H{}
 	)
 
-	if loginURL, app.CSRF, err = clients.AcpClient.AuthorizeURL(
+	if loginURL, app.CSRF, err = client.AuthorizeURL(
 		acpclient.WithOpenbankingIntentID(app.IntentID, []string{"urn:openbanking:psd2:sca"}),
 		acpclient.WithPKCE(),
 	); err != nil {
