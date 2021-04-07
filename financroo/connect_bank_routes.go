@@ -3,9 +3,11 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	acpclient "github.com/cloudentity/acp-client-go"
 	"github.com/cloudentity/acp-client-go/client/openbanking"
@@ -43,16 +45,16 @@ type ConnectBankRequest struct {
 func (s *Server) ConnectBank() func(*gin.Context) {
 	return func(c *gin.Context) {
 		var (
-			bankID             = BankID(c.Param("bankId"))
-			clients            Clients
-			ok                 bool
-			registerResponse   *openbanking.CreateAccountAccessConsentRequestCreated
-			connectRequest     = ConnectBankRequest{}
-			user               User
-			err                error
+			bankID           = BankID(c.Param("bankId"))
+			clients          Clients
+			ok               bool
+			registerResponse *openbanking.CreateAccountAccessConsentRequestCreated
+			connectRequest   = ConnectBankRequest{}
+			user             User
+			err              error
 		)
 
-		if user, err = s.WithUser(c); err != nil {
+		if user, _, err = s.WithUser(c); err != nil {
 			c.String(http.StatusUnauthorized, err.Error())
 			return
 		}
@@ -121,6 +123,7 @@ func (s *Server) ConnectBankCallback() func(*gin.Context) {
 			return
 		}
 
+		logrus.Infof("connect bank callback: %+v", token)
 		if err = s.ConnectBankForUser(appStorage, token); err != nil {
 			c.String(http.StatusUnauthorized, fmt.Sprintf("failed to exchange code: %+v", err))
 			return
@@ -135,22 +138,61 @@ func (s *Server) ConnectBankCallback() func(*gin.Context) {
 func (s *Server) ConnectedBanks() func(*gin.Context) {
 	return func(c *gin.Context) {
 		var (
-			user           User
-			err            error
-			connectedBanks = []string{}
+			user              User
+			err               error
+			clients           Clients
+			tokenResponse     *models.TokenResponse
+			ok                bool
+			connectedBanks    = []string{}
+			expiredBanks      = []string{}
+			tokens            = []BankToken{}
+			userSecureStorage = NewUserSecureStorage(s.SecureCookie)
 		)
 
-		if user, err = s.WithUser(c); err != nil {
+		if user, _, err = s.WithUser(c); err != nil {
 			c.String(http.StatusUnauthorized, err.Error())
 			return
 		}
+		logrus.Infof("XXX authenticated user: %+v", user)
 
-		for _, b := range user.Banks {
+		for i, b := range user.Banks {
+			logrus.Infof("XXX refresh token flow for bank: %s", b.BankID)
+
+			if clients, ok = s.Clients[BankID(b.BankID)]; !ok {
+				c.String(http.StatusInternalServerError, fmt.Sprintf("client not configured for bank: %s", b.BankID))
+				return
+			}
+
+			if tokenResponse, err = clients.RenewAccountsToken(b); err != nil {
+				logrus.Warnf("failed to renew token for bank: %s", b.BankID)
+				expiredBanks = append(expiredBanks, b.BankID)
+			}
+			logrus.Infof("XXX tokenResponse: %+v", tokenResponse)
+
 			connectedBanks = append(connectedBanks, b.BankID)
+
+			tokens = append(tokens, BankToken{
+				BankID:      b.BankID,
+				AccessToken: tokenResponse.AccessToken,
+				ExpiresAt:   time.Now().Add(time.Second * time.Duration(tokenResponse.ExpiresIn)).Unix(),
+			})
+
+			user.Banks[i].RefreshToken = tokenResponse.RefreshToken
+		}
+
+		if err = s.UserRepo.Set(user); err != nil {
+			c.String(http.StatusInternalServerError, fmt.Sprintf("failed to update user: %+v", err))
+			return
+		}
+
+		if err = userSecureStorage.Store(c, tokens); err != nil {
+			c.String(http.StatusInternalServerError, fmt.Sprintf("error while storing user data: %+v", err))
+			return
 		}
 
 		c.JSON(200, gin.H{
 			"connected_banks": connectedBanks,
+			"expired_banks":   expiredBanks,
 		})
 	}
 }
@@ -163,7 +205,7 @@ func (s *Server) DisconnectBank() func(*gin.Context) {
 			err    error
 		)
 
-		if user, err = s.WithUser(c); err != nil {
+		if user, _, err = s.WithUser(c); err != nil {
 			c.String(http.StatusUnauthorized, fmt.Sprintf("failed to get user: %+v", err))
 			return
 		}
@@ -175,6 +217,8 @@ func (s *Server) DisconnectBank() func(*gin.Context) {
 			}
 		}
 		user.Banks = cb
+
+		// todo clear user storage
 
 		if err = s.UserRepo.Set(user); err != nil {
 			c.String(http.StatusInternalServerError, fmt.Sprintf("failed to update user: %+v", err))
@@ -200,6 +244,7 @@ func (s *Server) ConnectBankForUser(appStorage AppStorage, token acpclient.Token
 	if user, err = s.UserRepo.Get(appStorage.Sub); err != nil {
 		return errors.Wrapf(err, "failed to get user")
 	}
+	logrus.Infof("XXX user: %+v", user)
 
 	for i, b := range user.Banks {
 		if b.BankID == string(appStorage.BankID) {
