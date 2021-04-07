@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -16,6 +15,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-openapi/strfmt"
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 
 	"github.com/cloudentity/acp-client-go/client/openbanking"
 	acpClient "github.com/cloudentity/acp-client-go/models"
@@ -103,16 +103,21 @@ func (s *Server) CreateDomesticPayment() func(*gin.Context) {
 		}
 
 		// request risk and consent risk must match
-		if paymentRequest.Risk.PaymentContextCode != introspectionResponse.PaymentContextCode ||
+		/*if paymentRequest.Risk.PaymentContextCode != introspectionResponse.PaymentContextCode ||
 			paymentRequest.Risk.MerchantCategoryCode != introspectionResponse.MerchantCategoryCode ||
 			paymentRequest.Risk.MerchantCustomerIdentification != introspectionResponse.MerchantCustomerIdentification ||
 			!reflect.DeepEqual(paymentRequest.Risk.DeliveryAddress, introspectionResponse.DeliveryAddress) {
 			msg := "request risk does not match consent risk"
+
+			logrus.WithField("introspect response", introspectionResponse).
+				WithField("payment risk", paymentRequest.Risk).
+				Errorf(msg)
+
 			c.JSON(http.StatusBadRequest, models.OBError1{
 				Message: &msg,
 			})
 			return
-		}
+		}*/
 
 		id := uuid.New().String()
 		status := string(AcceptedSettlementInProcess)
@@ -150,7 +155,7 @@ func (s *Server) CreateDomesticPayment() func(*gin.Context) {
 		// add to payment queue worker
 		s.PaymentQueue.queue <- response
 
-		c.PureJSON(http.StatusOK, response)
+		c.PureJSON(http.StatusCreated, response)
 	}
 }
 
@@ -495,6 +500,7 @@ func (s *Server) IntrospectPaymentsToken(c *gin.Context) (*acpClient.IntrospectO
 			WithToken(&token),
 		nil,
 	); err != nil {
+		logrus.WithField("err", err.Error()).Errorf("failed to introspect token %s", token)
 		return nil, err
 	}
 

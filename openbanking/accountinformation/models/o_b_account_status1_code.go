@@ -19,6 +19,11 @@ import (
 // swagger:model OBAccountStatus1Code
 type OBAccountStatus1Code string
 
+func NewOBAccountStatus1Code(value OBAccountStatus1Code) *OBAccountStatus1Code {
+	v := value
+	return &v
+}
+
 const (
 
 	// OBAccountStatus1CodeDeleted captures enum value "Deleted"

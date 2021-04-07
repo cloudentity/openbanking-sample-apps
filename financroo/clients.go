@@ -7,8 +7,9 @@ import (
 	"time"
 
 	obc "github.com/cloudentity/openbanking-sample-apps/client"
-	httptransport "github.com/go-openapi/runtime/client"
+	payments_client "github.com/cloudentity/openbanking-sample-apps/openbanking/paymentinitiation/client"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	acpclient "github.com/cloudentity/acp-client-go"
 )
@@ -86,6 +87,8 @@ type Token struct {
 
 type OpenbankingClient struct {
 	*obc.Openbanking
+
+	*payments_client.OpenbankingPaymentsClient
 }
 
 func NewOpenbankingClient(config BankConfig) (OpenbankingClient, error) {
@@ -100,12 +103,17 @@ func NewOpenbankingClient(config BankConfig) (OpenbankingClient, error) {
 		return c, errors.Wrapf(err, "failed to parse bank url")
 	}
 
-	c.Openbanking = obc.New(httptransport.NewWithClient(
+	tr := NewHTTPRuntimeWithClient(
 		u.Host,
 		"/",
 		[]string{u.Scheme},
 		hc,
-	), nil)
+	)
+
+	logrus.WithField("producers", tr.Producers).Info("list producers....")
+
+	c.Openbanking = obc.New(tr, nil)
+	c.OpenbankingPaymentsClient = payments_client.New(tr, nil)
 
 	return c, nil
 }

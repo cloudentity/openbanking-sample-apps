@@ -19,6 +19,11 @@ import (
 // swagger:model OB_MinMaxType1Code
 type OBMinMaxType1Code string
 
+func NewOBMinMaxType1Code(value OBMinMaxType1Code) *OBMinMaxType1Code {
+	v := value
+	return &v
+}
+
 const (
 
 	// OBMinMaxType1CodeFMMN captures enum value "FMMN"

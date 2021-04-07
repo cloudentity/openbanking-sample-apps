@@ -20,6 +20,11 @@ import (
 // swagger:model OBCreditDebitCode_0
 type OBCreditDebitCode0 string
 
+func NewOBCreditDebitCode0(value OBCreditDebitCode0) *OBCreditDebitCode0 {
+	v := value
+	return &v
+}
+
 const (
 
 	// OBCreditDebitCode0Credit captures enum value "Credit"

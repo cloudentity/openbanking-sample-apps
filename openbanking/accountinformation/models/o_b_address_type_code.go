@@ -19,6 +19,11 @@ import (
 // swagger:model OBAddressTypeCode
 type OBAddressTypeCode string
 
+func NewOBAddressTypeCode(value OBAddressTypeCode) *OBAddressTypeCode {
+	v := value
+	return &v
+}
+
 const (
 
 	// OBAddressTypeCodeBusiness captures enum value "Business"

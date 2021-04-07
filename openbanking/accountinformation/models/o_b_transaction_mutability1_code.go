@@ -19,6 +19,11 @@ import (
 // swagger:model OBTransactionMutability1Code
 type OBTransactionMutability1Code string
 
+func NewOBTransactionMutability1Code(value OBTransactionMutability1Code) *OBTransactionMutability1Code {
+	v := value
+	return &v
+}
+
 const (
 
 	// OBTransactionMutability1CodeMutable captures enum value "Mutable"

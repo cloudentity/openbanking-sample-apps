@@ -19,6 +19,11 @@ import (
 // swagger:model OBBeneficiaryType1Code
 type OBBeneficiaryType1Code string
 
+func NewOBBeneficiaryType1Code(value OBBeneficiaryType1Code) *OBBeneficiaryType1Code {
+	v := value
+	return &v
+}
+
 const (
 
 	// OBBeneficiaryType1CodeTrusted captures enum value "Trusted"

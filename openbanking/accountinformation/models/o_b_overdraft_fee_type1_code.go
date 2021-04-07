@@ -19,6 +19,11 @@ import (
 // swagger:model OB_OverdraftFeeType1Code
 type OBOverdraftFeeType1Code string
 
+func NewOBOverdraftFeeType1Code(value OBOverdraftFeeType1Code) *OBOverdraftFeeType1Code {
+	v := value
+	return &v
+}
+
 const (
 
 	// OBOverdraftFeeType1CodeFBAO captures enum value "FBAO"

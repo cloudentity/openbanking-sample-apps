@@ -19,6 +19,11 @@ import (
 // swagger:model OBExternalAccountSubType1Code
 type OBExternalAccountSubType1Code string
 
+func NewOBExternalAccountSubType1Code(value OBExternalAccountSubType1Code) *OBExternalAccountSubType1Code {
+	v := value
+	return &v
+}
+
 const (
 
 	// OBExternalAccountSubType1CodeChargeCard captures enum value "ChargeCard"

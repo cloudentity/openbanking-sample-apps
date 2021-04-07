@@ -19,6 +19,11 @@ import (
 // swagger:model OBChargeBearerType1Code
 type OBChargeBearerType1Code string
 
+func NewOBChargeBearerType1Code(value OBChargeBearerType1Code) *OBChargeBearerType1Code {
+	v := value
+	return &v
+}
+
 const (
 
 	// OBChargeBearerType1CodeBorneByCreditor captures enum value "BorneByCreditor"

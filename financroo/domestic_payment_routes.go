@@ -6,8 +6,11 @@ import (
 	"net/http"
 	"time"
 
+	acpclient "github.com/cloudentity/acp-client-go"
 	"github.com/cloudentity/acp-client-go/client/openbanking"
 	"github.com/cloudentity/acp-client-go/models"
+	"github.com/cloudentity/openbanking-sample-apps/openbanking/paymentinitiation/client/domestic_payments"
+	obModels "github.com/cloudentity/openbanking-sample-apps/openbanking/paymentinitiation/models"
 	"github.com/gin-gonic/gin"
 	"github.com/go-openapi/strfmt"
 	"github.com/google/uuid"
@@ -81,6 +84,10 @@ func (s *Server) CreateDomesticPaymentConsent() func(*gin.Context) {
 								Currency: &currency,
 							},
 							InstructionIdentification: &id,
+							RemittanceInformation: &models.DomesticPaymentConsentRemittanceInformation{
+								Reference: paymentConsentRequest.PaymentReference,
+								Unstructured: "Unstructured todo", // TODO invoice info?
+							},
 						},
 						ReadRefundAccount: "No",
 					},
@@ -102,6 +109,13 @@ func (s *Server) DomesticPaymentCallback() func(*gin.Context) {
 		var (
 			app        string
 			appStorage = AppStorage{}
+			code       = c.Query("code")
+			state      = c.Query("state")
+			consentResponse *openbanking.GetDomesticPaymentConsentRequestOK
+			initiation obModels.OBWriteDomestic2DataInitiation
+			risk obModels.OBRisk1
+			paymentCreated *domestic_payments.CreateDomesticPaymentsCreated
+			token      acpclient.Token
 			err        error
 		)
 
@@ -120,13 +134,79 @@ func (s *Server) DomesticPaymentCallback() func(*gin.Context) {
 			return
 		}
 
-		// todo get consent
-		// todo create payment
-		// todo redirect to confetti page
+		bank := s.Clients[appStorage.BankID]
+		acpClient := bank.AcpPaymentsClient
+		bankClient := bank.BankClient
+
+		params := openbanking.NewGetDomesticPaymentConsentRequestParams().
+			WithTid(acpClient.TenantID).
+			WithAid(acpClient.ServerID).
+			WithConsentID(appStorage.IntentID)
+
+		if token, err = acpClient.Exchange(code, state, appStorage.CSRF); err != nil {
+			c.String(http.StatusUnauthorized, fmt.Sprintf("failed to exchange code: %+v", err))
+			return
+		}
+
+		if consentResponse, err = acpClient.Openbanking.GetDomesticPaymentConsentRequest(params, nil); err != nil {
+			c.String(http.StatusInternalServerError, fmt.Sprintf("failed to get consent: %+v", err))
+			return
+		}
+
+		if initiation, err = getInitiation(consentResponse); err != nil {
+			c.String(http.StatusInternalServerError, fmt.Sprintf("failed to map consent data initiation: %+v", err))
+			return
+		}
+
+		if risk, err = getRisk(consentResponse); err != nil {
+			c.String(http.StatusInternalServerError, fmt.Sprintf("failed to map consent risk: %+v", err))
+			return
+		}
+
+		if paymentCreated, err = bankClient.DomesticPayments.CreateDomesticPayments(domestic_payments.NewCreateDomesticPaymentsParams().
+			WithAuthorization(token.AccessToken).
+			WithOBWriteDomestic2Param(&obModels.OBWriteDomestic2{
+				Data: &obModels.OBWriteDomestic2Data{
+					ConsentID:  &appStorage.IntentID,
+					Initiation: &initiation,
+				},
+				Risk: &risk,
+			}), nil); err != nil {
+			errJson, _ := json.Marshal(err)
+			c.String(http.StatusInternalServerError, fmt.Sprintf("failed to create payment: %s", errJson))
+			return
+		}
 
 		c.SetCookie("app", "", -1, "/", "", false, true)
 
-		c.Redirect(http.StatusFound, s.Config.UIURL)
+		c.Redirect(http.StatusFound, s.Config.UIURL + fmt.Sprintf("/investments/contribute/%s/success", *paymentCreated.Payload.Data.DomesticPaymentID))
 	}
 }
 
+func getInitiation(consentResponse *openbanking.GetDomesticPaymentConsentRequestOK) (pi obModels.OBWriteDomestic2DataInitiation, err error) {
+	var initiationPayload []byte
+
+	if initiationPayload, err = json.Marshal(consentResponse.Payload.Data.Initiation); err != nil {
+		return pi, err
+	}
+
+	if err = json.Unmarshal(initiationPayload, &pi); err != nil {
+		return pi, err
+	}
+
+	return pi, nil
+}
+
+func getRisk(consentResponse *openbanking.GetDomesticPaymentConsentRequestOK) (pi obModels.OBRisk1, err error) {
+	var riskPayload []byte
+
+	if riskPayload, err = json.Marshal(consentResponse.Payload.Risk); err != nil {
+		return pi, err
+	}
+
+	if err = json.Unmarshal(riskPayload, &pi); err != nil {
+		return pi, err
+	}
+
+	return pi, nil
+}

@@ -19,6 +19,11 @@ import (
 // swagger:model OBExternalStandingOrderStatus1Code
 type OBExternalStandingOrderStatus1Code string
 
+func NewOBExternalStandingOrderStatus1Code(value OBExternalStandingOrderStatus1Code) *OBExternalStandingOrderStatus1Code {
+	v := value
+	return &v
+}
+
 const (
 
 	// OBExternalStandingOrderStatus1CodeActive captures enum value "Active"
