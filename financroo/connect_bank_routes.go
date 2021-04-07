@@ -153,11 +153,8 @@ func (s *Server) ConnectedBanks() func(*gin.Context) {
 			c.String(http.StatusUnauthorized, err.Error())
 			return
 		}
-		logrus.Infof("XXX authenticated user: %+v", user)
 
 		for i, b := range user.Banks {
-			logrus.Infof("XXX refresh token flow for bank: %s", b.BankID)
-
 			if clients, ok = s.Clients[BankID(b.BankID)]; !ok {
 				c.String(http.StatusInternalServerError, fmt.Sprintf("client not configured for bank: %s", b.BankID))
 				return
@@ -168,7 +165,6 @@ func (s *Server) ConnectedBanks() func(*gin.Context) {
 				expiredBanks = append(expiredBanks, b.BankID)
 				continue
 			}
-			logrus.Infof("XXX tokenResponse: %+v", tokenResponse)
 
 			connectedBanks = append(connectedBanks, b.BankID)
 
@@ -245,7 +241,6 @@ func (s *Server) ConnectBankForUser(appStorage AppStorage, token acpclient.Token
 	if user, err = s.UserRepo.Get(appStorage.Sub); err != nil {
 		return errors.Wrapf(err, "failed to get user")
 	}
-	logrus.Infof("XXX user: %+v", user)
 
 	for i, b := range user.Banks {
 		if b.BankID == string(appStorage.BankID) {
