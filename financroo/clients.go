@@ -13,7 +13,7 @@ import (
 	acpclient "github.com/cloudentity/acp-client-go"
 )
 
-func NewAcpClient(c Config, cfg BankConfig) (acpclient.Client, error) {
+func NewAcpClient(c Config, cfg BankConfig, redirect string) (acpclient.Client, error) {
 	var (
 		issuerURL, authorizeURL, redirectURL *url.URL
 		client                               acpclient.Client
@@ -28,7 +28,7 @@ func NewAcpClient(c Config, cfg BankConfig) (acpclient.Client, error) {
 		return client, err
 	}
 
-	if redirectURL, err = url.Parse(fmt.Sprintf("%s/api/callback", c.UIURL)); err != nil {
+	if redirectURL, err = url.Parse(fmt.Sprintf("%s%s", c.UIURL, redirect)); err != nil {
 		return client, err
 	}
 
@@ -40,7 +40,7 @@ func NewAcpClient(c Config, cfg BankConfig) (acpclient.Client, error) {
 		RedirectURL:                 redirectURL,
 		RequestObjectSigningKeyFile: cfg.AcpClient.KeyFile,
 		RequestObjectExpiration:     &requestObjectExpiration,
-		Scopes:                      []string{"accounts", "openid", "offline_access"},
+		Scopes:                      []string{"accounts", "payments", "openid", "offline_access"},
 		Timeout:                     cfg.AcpClient.Timeout,
 		CertFile:                    cfg.AcpClient.CertFile,
 		KeyFile:                     cfg.AcpClient.KeyFile,

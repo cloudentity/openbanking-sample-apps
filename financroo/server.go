@@ -15,20 +15,26 @@ import (
 )
 
 type Clients struct {
-	AcpClient  acpclient.Client
-	BankClient OpenbankingClient
+	AcpAccountsClient  acpclient.Client
+	AcpPaymentsClient  acpclient.Client
+	BankClient         OpenbankingClient
 }
 
 func InitClients(config Config) (map[BankID]Clients, error) {
 	var (
-		clients      = map[BankID]Clients{}
-		acpWebClient acpclient.Client
-		bankClient   OpenbankingClient
-		err          error
+		clients              = map[BankID]Clients{}
+		acpAccountsWebClient acpclient.Client
+		acpPaymentsWebClient acpclient.Client
+		bankClient           OpenbankingClient
+		err                  error
 	)
 
 	for _, bank := range config.Banks {
-		if acpWebClient, err = NewAcpClient(config, bank); err != nil {
+		if acpAccountsWebClient, err = NewAcpClient(config, bank, "/api/callback"); err != nil {
+			return clients, errors.Wrapf(err, "failed to init acp web client for bank: %s", bank.ID)
+		}
+
+		if acpPaymentsWebClient, err = NewAcpClient(config, bank, "/api/domestic/callback"); err != nil {
 			return clients, errors.Wrapf(err, "failed to init acp web client for bank: %s", bank.ID)
 		}
 
@@ -37,7 +43,8 @@ func InitClients(config Config) (map[BankID]Clients, error) {
 		}
 
 		clients[bank.ID] = Clients{
-			AcpClient:  acpWebClient,
+			AcpAccountsClient:  acpAccountsWebClient,
+			AcpPaymentsClient:  acpPaymentsWebClient,
 			BankClient: bankClient,
 		}
 	}
@@ -103,6 +110,9 @@ func (s *Server) Start() error {
 	r.POST("/api/connect/:bankId", s.ConnectBank())
 	r.GET("/api/callback", s.ConnectBankCallback())
 	r.DELETE("/api/disconnect/:bankId", s.DisconnectBank())
+
+	r.POST("/api/domestic-payment-consent", s.CreateDomesticPaymentConsent())
+	r.GET("/api/domestic/callback", s.DomesticPaymentCallback())
 
 	r.GET("/api/accounts", s.GetAccounts())
 	r.GET("/api/transactions", s.GetTransactions())

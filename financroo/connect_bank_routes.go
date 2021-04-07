@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"net/url"
 
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
@@ -48,9 +47,6 @@ func (s *Server) ConnectBank() func(*gin.Context) {
 			clients            Clients
 			ok                 bool
 			registerResponse   *openbanking.CreateAccountAccessConsentRequestCreated
-			encodedCookieValue string
-			loginURL           string
-			data               = gin.H{}
 			connectRequest     = ConnectBankRequest{}
 			user               User
 			err                error
@@ -70,10 +66,10 @@ func (s *Server) ConnectBank() func(*gin.Context) {
 			c.String(http.StatusBadRequest, fmt.Sprintf("client not configured for bank: %s", bankID))
 		}
 
-		if registerResponse, err = clients.AcpClient.Openbanking.CreateAccountAccessConsentRequest(
+		if registerResponse, err = clients.AcpAccountsClient.Openbanking.CreateAccountAccessConsentRequest(
 			openbanking.NewCreateAccountAccessConsentRequestParams().
-				WithTid(clients.AcpClient.TenantID).
-				WithAid(clients.AcpClient.ServerID).
+				WithTid(clients.AcpAccountsClient.TenantID).
+				WithAid(clients.AcpAccountsClient.ServerID).
 				WithRequest(&models.AccountAccessConsentRequest{
 					Data: &models.AccountAccessConsentRequestData{
 						Permissions: connectRequest.Permissions,
@@ -85,36 +81,7 @@ func (s *Server) ConnectBank() func(*gin.Context) {
 			return
 		}
 
-		app := AppStorage{
-			BankID:   bankID,
-			IntentID: registerResponse.Payload.Data.ConsentID,
-			Sub:      user.Sub,
-		}
-
-		if loginURL, app.CSRF, err = clients.AcpClient.AuthorizeURL(
-			acpclient.WithOpenbankingIntentID(app.IntentID, []string{"urn:openbanking:psd2:sca"}),
-			acpclient.WithPKCE(),
-		); err != nil {
-			c.String(http.StatusInternalServerError, fmt.Sprintf("failed to build authorize url: %+v", err))
-			return
-		}
-
-		if _, err = url.Parse(loginURL); err != nil {
-			c.String(http.StatusInternalServerError, fmt.Sprintf("failed to parse login url: %+v", err))
-			return
-		}
-
-		// persist verifier and nonce in a secure encrypted cookie
-		if encodedCookieValue, err = s.SecureCookie.Encode("app", app); err != nil {
-			c.String(http.StatusInternalServerError, fmt.Sprintf("error while encoding cookie: %+v", err))
-			return
-		}
-
-		c.SetCookie("app", encodedCookieValue, 0, "/", "", false, true)
-
-		data["login_url"] = loginURL
-
-		c.JSON(http.StatusOK, data)
+		s.CreateConsentResponse(c, bankID, registerResponse.Payload.Data.ConsentID, user, clients.AcpAccountsClient)
 	}
 }
 
@@ -149,7 +116,7 @@ func (s *Server) ConnectBankCallback() func(*gin.Context) {
 			c.String(http.StatusBadRequest, fmt.Sprintf("client not configured for bank: %s", appStorage.BankID))
 		}
 
-		if token, err = clients.AcpClient.Exchange(code, c.Query("state"), appStorage.CSRF); err != nil {
+		if token, err = clients.AcpAccountsClient.Exchange(code, c.Query("state"), appStorage.CSRF); err != nil {
 			c.String(http.StatusUnauthorized, fmt.Sprintf("failed to exchange code: %+v", err))
 			return
 		}
