@@ -215,8 +215,6 @@ func (s *Server) DisconnectBank() func(*gin.Context) {
 		}
 		user.Banks = cb
 
-		// todo clear user storage
-
 		if err = s.UserRepo.Set(user); err != nil {
 			c.String(http.StatusInternalServerError, fmt.Sprintf("failed to update user: %+v", err))
 			return
