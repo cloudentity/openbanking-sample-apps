@@ -1,5 +1,5 @@
 import React from "react";
-import { useHistory } from "react-router";
+import {useHistory, useParams} from "react-router";
 import Button from "@material-ui/core/Button";
 import Chip from "@material-ui/core/Chip";
 import { makeStyles } from "@material-ui/core/styles";
@@ -12,6 +12,7 @@ import Confetti from "./Confetti";
 import { theme } from "../../theme";
 import bankIcon from "../../assets/banks/gobank-icon.svg";
 import checkIcon from "../../assets/icon-check.svg";
+import qs from 'query-string';
 
 const useStyles = makeStyles((theme) => ({
   title: {
@@ -100,8 +101,9 @@ export default function InvestmentsContributeSuccess({
 }) {
   const history = useHistory();
   const classes = useStyles();
-  // const { id } = useParams<Record<string, string | undefined>>();
-  // FIXME: check id from params and validity
+  const {id} = useParams<{id: string}>();
+  const search = history.location.search
+  const searchParsed = qs.parse(search)
 
   return (
     <div style={{ position: "relative" }}>
@@ -137,12 +139,12 @@ export default function InvestmentsContributeSuccess({
               style={{ alignItems: "center", paddingBottom: 20 }}
             >
               <div style={{ ...theme.custom.caption }}>Transaction ID</div>
-              <div>FIXME</div>
+              <div>{id}</div>
               <div style={{ ...theme.custom.label, paddingBottom: 0 }}>
                 Total contribution paid
               </div>
               <div style={{ paddingBottom: 0 }}>
-                <Chip label="£ FIXME" className={classes.chip} />
+                <Chip label={`${searchParsed.currency} ${searchParsed.amount}`} className={classes.chip} />
               </div>
             </div>
           </Field>
