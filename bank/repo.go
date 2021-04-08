@@ -225,16 +225,15 @@ func (ur *UserRepo) writeData(bucket, key []byte, data Data) error {
 }
 
 func (ur *UserRepo) loadAll(m map[string]Data) error {
-	var (
-		data Data
-		err  error
-	)
-
 	return ur.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket(bucketName)
 		c := b.Cursor()
 
 		for k, v := c.First(); k != nil; k, v = c.Next() {
+			var (
+				data Data
+				err  error
+			)
 			if err = json.Unmarshal(v, &data); err != nil {
 				return errors.Wrapf(err, fmt.Sprintf("failed to unmarshal data for user %s", string(k)))
 			}
