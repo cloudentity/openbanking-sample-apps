@@ -34,7 +34,7 @@ func (s *Server) CreateDomesticPaymentConsent() func(*gin.Context) {
 			err                   error
 		)
 
-		if user, err = s.WithUser(c); err != nil {
+		if user, _, err = s.WithUser(c); err != nil {
 			c.String(http.StatusUnauthorized, err.Error())
 			return
 		}
@@ -51,13 +51,13 @@ func (s *Server) CreateDomesticPaymentConsent() func(*gin.Context) {
 		schema := "UK.OBIE.SortCodeAccountNumber"
 		authorisationType := "Single"
 		account := models.DomesticPaymentConsentCreditorAccount{
-			Identification:          &paymentConsentRequest.PayeeAccountNumber,
-			Name:                    &paymentConsentRequest.PayeeAccountName,
-			SchemeName:              &schema,
+			Identification: &paymentConsentRequest.PayeeAccountNumber,
+			Name:           &paymentConsentRequest.PayeeAccountName,
+			SchemeName:     &schema,
 		}
 		debtorAccount := models.DomesticPaymentConsentDebtorAccount{
 			Identification: &paymentConsentRequest.AccountID,
-			Name: "myAccount", // todo
+			Name:           "myAccount", // todo
 			SchemeName:     &schema,
 		}
 		id := uuid.New().String()[:10]
@@ -68,15 +68,15 @@ func (s *Server) CreateDomesticPaymentConsent() func(*gin.Context) {
 				WithAid(clients.AcpPaymentsClient.ServerID).
 				WithRequest(&models.DomesticPaymentConsentRequest{
 					Data: &models.DomesticPaymentConsentRequestData{
-						Authorisation:     &models.DomesticPaymentConsentAuthorisation{
+						Authorisation: &models.DomesticPaymentConsentAuthorisation{
 							AuthorisationType:  &authorisationType,
 							CompletionDateTime: strfmt.DateTime(time.Now().Add(time.Hour)),
 						},
-						Initiation:        &models.DomesticPaymentConsentDataInitiation{
-							CreditorAccount:           &account,
-							DebtorAccount:             &debtorAccount,
-							EndToEndIdentification:    &id,
-							InstructedAmount:          &models.DomesticPaymentConsentInstructedAmount{
+						Initiation: &models.DomesticPaymentConsentDataInitiation{
+							CreditorAccount:        &account,
+							DebtorAccount:          &debtorAccount,
+							EndToEndIdentification: &id,
+							InstructedAmount: &models.DomesticPaymentConsentInstructedAmount{
 								Amount:   &paymentConsentRequest.Amount,
 								Currency: &currency,
 							},
@@ -129,4 +129,3 @@ func (s *Server) DomesticPaymentCallback() func(*gin.Context) {
 		c.Redirect(http.StatusFound, s.Config.UIURL)
 	}
 }
-

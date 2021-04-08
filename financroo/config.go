@@ -15,6 +15,8 @@ func init() {
 	viper.SetDefault("UI_URL", "")
 	viper.SetDefault("CERT_FILE", "")
 	viper.SetDefault("KEY_FILE", "")
+	viper.SetDefault("COOKIE_HASH_KEY", []byte("secret-key"))
+	viper.SetDefault("COOKIE_BLOCK_KEY", []byte("this-is-32-len-block-key"))
 }
 
 type ClientConfig struct {
@@ -62,6 +64,8 @@ type Config struct {
 	UIURL          string `mapstructure:"ui_url" validate:"required,url"`
 	CertFile       string `mapstructure:"cert_file" validate:"required"`
 	KeyFile        string `mapstructure:"key_file" validate:"required"`
+	CookieHashKey  []byte `mapstructure:"cookie_hash_key"`
+	CookieBlockKey []byte `mapstructure:"cookie_block_key"`
 	Login          LoginConfig
 	Banks          []BankConfig
 	FeatureFlags   FeatureFlags `mapstructure:"feature_flags"`
