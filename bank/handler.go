@@ -153,7 +153,7 @@ func (s *Server) CreateDomesticPayment() func(*gin.Context) {
 		}
 
 		// add to payment queue worker
-		s.PaymentQueue.queue <- response
+		// s.PaymentQueue.queue <- response
 
 		c.PureJSON(http.StatusCreated, response)
 	}
@@ -398,7 +398,7 @@ func (s *Server) InternalGetBalances() func(*gin.Context) {
 			return
 		}
 
-		var balancesPointers []*models. OBReadBalance1DataBalanceItems0
+		var balancesPointers []*models.OBReadBalance1DataBalanceItems0
 
 		for _, b := range balances {
 			balance := b
@@ -406,7 +406,7 @@ func (s *Server) InternalGetBalances() func(*gin.Context) {
 		}
 
 		c.PureJSON(http.StatusOK, models.OBReadBalance1{
-			Data:  &models.OBReadBalance1Data{
+			Data: &models.OBReadBalance1Data{
 				Balance: balancesPointers,
 			},
 		})
