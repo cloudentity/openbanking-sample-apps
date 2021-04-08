@@ -7,10 +7,69 @@ import (
 	"time"
 
 	acpclient "github.com/cloudentity/acp-client-go"
+	"github.com/cloudentity/acp-client-go/client/oauth2"
+	"github.com/cloudentity/acp-client-go/models"
 	obc "github.com/cloudentity/openbanking-sample-apps/client"
 	payments_client "github.com/cloudentity/openbanking-sample-apps/openbanking/paymentinitiation/client"
 	"github.com/pkg/errors"
 )
+
+type Clients struct {
+	AcpAccountsClient acpclient.Client
+	AcpPaymentsClient acpclient.Client
+	BankClient        OpenbankingClient
+}
+
+func (c *Clients) RenewAccountsToken(bank ConnectedBank) (*models.TokenResponse, error) {
+	var (
+		resp *oauth2.TokenOK
+		err  error
+	)
+
+	if resp, err = c.AcpAccountsClient.Acp.Oauth2.Token(
+		oauth2.NewTokenParams().
+			WithAid(c.AcpAccountsClient.ServerID).
+			WithTid(c.AcpAccountsClient.TenantID).
+			WithClientID(&c.AcpAccountsClient.Config.ClientID).
+			WithGrantType("refresh_token").
+			WithRefreshToken(&bank.RefreshToken)); err != nil {
+		return nil, errors.Wrapf(err, "can't renew access token for a bank: %s", bank.BankID)
+	}
+
+	return resp.Payload, nil
+}
+
+func InitClients(config Config) (map[BankID]Clients, error) {
+	var (
+		clients              = map[BankID]Clients{}
+		acpAccountsWebClient acpclient.Client
+		acpPaymentsWebClient acpclient.Client
+		bankClient           OpenbankingClient
+		err                  error
+	)
+
+	for _, bank := range config.Banks {
+		if acpAccountsWebClient, err = NewAcpClient(config, bank, "/api/callback"); err != nil {
+			return clients, errors.Wrapf(err, "failed to init acp web client for bank: %s", bank.ID)
+		}
+
+		if acpPaymentsWebClient, err = NewAcpClient(config, bank, "/api/domestic/callback"); err != nil {
+			return clients, errors.Wrapf(err, "failed to init acp web client for bank: %s", bank.ID)
+		}
+
+		if bankClient, err = NewOpenbankingClient(bank); err != nil {
+			return clients, errors.Wrapf(err, "failed to init client for bank: %s", bank.ID)
+		}
+
+		clients[bank.ID] = Clients{
+			AcpAccountsClient: acpAccountsWebClient,
+			AcpPaymentsClient: acpPaymentsWebClient,
+			BankClient:        bankClient,
+		}
+	}
+
+	return clients, nil
+}
 
 func NewAcpClient(c Config, cfg BankConfig, redirect string) (acpclient.Client, error) {
 	var (
@@ -76,11 +135,6 @@ func NewLoginClient(c Config) (acpclient.Client, error) {
 	}
 
 	return client, nil
-}
-
-type Token struct {
-	AccessToken  string
-	RefreshToken string
 }
 
 type OpenbankingClient struct {

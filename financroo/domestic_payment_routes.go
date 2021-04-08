@@ -37,7 +37,7 @@ func (s *Server) CreateDomesticPaymentConsent() func(*gin.Context) {
 			err                   error
 		)
 
-		if user, err = s.WithUser(c); err != nil {
+		if user, _, err = s.WithUser(c); err != nil {
 			c.String(http.StatusUnauthorized, err.Error())
 			return
 		}

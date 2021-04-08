@@ -11,16 +11,15 @@ import (
 	"github.com/cloudentity/openbanking-sample-apps/models"
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
-
-	"github.com/cloudentity/acp-client-go/client/oauth2"
 )
 
-func (s *Server) WithUser(c *gin.Context) (User, error) {
+func (s *Server) WithUser(c *gin.Context) (User, BankTokens, error) {
 	var (
 		user   User
 		claims map[string]interface{}
 		sub    string
 		ok     bool
+		tokens []BankToken
 		err    error
 	)
 
@@ -28,31 +27,34 @@ func (s *Server) WithUser(c *gin.Context) (User, error) {
 	token = strings.ReplaceAll(token, "Bearer ", "")
 
 	if token == "" {
-		return user, errors.New("no access token provided")
+		return user, tokens, errors.New("no access token provided")
 	}
 
 	if claims, err = s.LoginClient.Userinfo(token); err != nil {
-		return user, errors.Wrapf(err, "invalid token")
+		return user, tokens, errors.Wrapf(err, "invalid token")
 	}
 
 	if sub, ok = claims["sub"].(string); !ok {
-		return user, errors.New("sub claim is missing")
+		return user, tokens, errors.New("sub claim is missing")
 	}
 
 	if user, err = s.UserRepo.Get(sub); err != nil {
-		return user, errors.Wrapf(err, "failed to get user")
+		return user, tokens, errors.Wrapf(err, "failed to get user")
 	}
 
-	return user, nil
+	if tokens, err = s.UserSecureStorage.Read(c); err != nil {
+		return user, tokens, errors.Wrapf(err, "failed to read user store")
+	}
+
+	return user, tokens, nil
 }
 
-func (s *Server) GetClientWithToken(bank ConnectedBank) (OpenbankingClient, Token, error) {
+func (s *Server) GetClientWithToken(bank ConnectedBank, tokens BankTokens) (OpenbankingClient, string, error) {
 	var (
 		clients Clients
 		client  OpenbankingClient
 		ok      bool
-		token   Token
-		tResp   *oauth2.TokenOK
+		token   string
 		err     error
 	)
 
@@ -60,18 +62,9 @@ func (s *Server) GetClientWithToken(bank ConnectedBank) (OpenbankingClient, Toke
 		return client, token, fmt.Errorf("can't get client for a bank: %s", bank.BankID)
 	}
 
-	if tResp, err = clients.AcpAccountsClient.Acp.Oauth2.Token(
-		oauth2.NewTokenParams().
-			WithAid(clients.AcpAccountsClient.ServerID).
-			WithTid(clients.AcpAccountsClient.TenantID).
-			WithClientID(&clients.AcpAccountsClient.Config.ClientID).
-			WithGrantType("refresh_token").
-			WithRefreshToken(&bank.RefreshToken)); err != nil {
-		return client, token, errors.Wrapf(err, "can't renew access token for a bank: %s", bank.BankID)
+	if token, err = tokens.GetAccessToken(bank.BankID); err != nil {
+		return client, token, err
 	}
-
-	token.AccessToken = tResp.Payload.AccessToken
-	token.RefreshToken = tResp.Payload.RefreshToken
 
 	return clients.BankClient, token, nil
 }
@@ -86,34 +79,29 @@ func (s *Server) GetAccounts() func(ctx *gin.Context) {
 		var (
 			resp         *accounts.GetAccountsOK
 			client       OpenbankingClient
-			token        Token
+			accessToken  string
 			accountsData = []Account{}
 			user         User
+			tokens       BankTokens
 			err          error
 		)
 
-		if user, err = s.WithUser(c); err != nil {
+		if user, tokens, err = s.WithUser(c); err != nil {
 			c.String(http.StatusUnauthorized, err.Error())
 			return
 		}
 
 		// todo parallel
-		for i, b := range user.Banks {
-			if client, token, err = s.GetClientWithToken(b); err != nil {
+		for _, b := range user.Banks {
+			if client, accessToken, err = s.GetClientWithToken(b, tokens); err != nil {
 				c.String(http.StatusUnauthorized, err.Error())
 				return
 			}
-			if err = s.UserRepo.Set(user); err != nil {
-				c.String(http.StatusInternalServerError, fmt.Sprintf("failed to update user: %+v", err))
-				return
-			}
 
-			if resp, err = client.Accounts.GetAccounts(accounts.NewGetAccountsParams().WithAuthorization(token.AccessToken), nil); err != nil {
+			if resp, err = client.Accounts.GetAccounts(accounts.NewGetAccountsParams().WithAuthorization(accessToken), nil); err != nil {
 				c.String(http.StatusUnauthorized, fmt.Sprintf("failed to call bank get accounts: %+v", err))
 				return
 			}
-
-			user.Banks[i].RefreshToken = token.RefreshToken
 
 			for _, a := range resp.Payload.Data.Account {
 				accountsData = append(accountsData, Account{
@@ -139,20 +127,21 @@ func (s *Server) GetBalances() func(ctx *gin.Context) {
 		var (
 			resp         *balances.GetBalancesOK
 			client       OpenbankingClient
-			token        Token
+			accessToken  string
 			balancesData = []Balance{}
+			tokens       BankTokens
 			user         User
 			err          error
 		)
 
-		if user, err = s.WithUser(c); err != nil {
+		if user, tokens, err = s.WithUser(c); err != nil {
 			c.String(http.StatusUnauthorized, err.Error())
 			return
 		}
 
 		// todo parallel
-		for i, b := range user.Banks {
-			if client, token, err = s.GetClientWithToken(b); err != nil {
+		for _, b := range user.Banks {
+			if client, accessToken, err = s.GetClientWithToken(b, tokens); err != nil {
 				c.String(http.StatusUnauthorized, err.Error())
 				return
 			}
@@ -160,12 +149,10 @@ func (s *Server) GetBalances() func(ctx *gin.Context) {
 				c.String(http.StatusInternalServerError, fmt.Sprintf("failed to update user: %+v", err))
 			}
 
-			if resp, err = client.Balances.GetBalances(balances.NewGetBalancesParams().WithAuthorization(token.AccessToken), nil); err != nil {
+			if resp, err = client.Balances.GetBalances(balances.NewGetBalancesParams().WithAuthorization(accessToken), nil); err != nil {
 				c.String(http.StatusUnauthorized, fmt.Sprintf("failed to call bank get balances: %+v", err))
 				return
 			}
-
-			user.Banks[i].RefreshToken = token.RefreshToken
 
 			for _, a := range resp.Payload.Data.Balance {
 				balancesData = append(balancesData, Balance{
@@ -191,33 +178,29 @@ func (s *Server) GetTransactions() func(ctx *gin.Context) {
 		var (
 			resp             *transactions.GetTransactionsOK
 			client           OpenbankingClient
-			token            Token
+			accessToken      string
 			transactionsData = []Transaction{}
+			tokens           BankTokens
 			user             User
 			err              error
 		)
 
-		if user, err = s.WithUser(c); err != nil {
+		if user, tokens, err = s.WithUser(c); err != nil {
 			c.String(http.StatusUnauthorized, err.Error())
 			return
 		}
 
 		// todo parallel
-		for i, b := range user.Banks {
-			if client, token, err = s.GetClientWithToken(b); err != nil {
+		for _, b := range user.Banks {
+			if client, accessToken, err = s.GetClientWithToken(b, tokens); err != nil {
 				c.String(http.StatusUnauthorized, err.Error())
 				return
 			}
-			if err = s.UserRepo.Set(user); err != nil {
-				c.String(http.StatusInternalServerError, fmt.Sprintf("failed to update user: %+v", err))
-			}
 
-			if resp, err = client.Transactions.GetTransactions(transactions.NewGetTransactionsParams().WithAuthorization(token.AccessToken), nil); err != nil {
+			if resp, err = client.Transactions.GetTransactions(transactions.NewGetTransactionsParams().WithAuthorization(accessToken), nil); err != nil {
 				c.String(http.StatusUnauthorized, fmt.Sprintf("failed to call bank get transactions: %+v", err))
 				return
 			}
-
-			user.Banks[i].RefreshToken = token.RefreshToken
 
 			for _, a := range resp.Payload.Data.Transaction {
 				transactionsData = append(transactionsData, Transaction{

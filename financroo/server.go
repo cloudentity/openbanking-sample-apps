@@ -14,52 +14,15 @@ import (
 	acpclient "github.com/cloudentity/acp-client-go"
 )
 
-type Clients struct {
-	AcpAccountsClient  acpclient.Client
-	AcpPaymentsClient  acpclient.Client
-	BankClient         OpenbankingClient
-}
-
-func InitClients(config Config) (map[BankID]Clients, error) {
-	var (
-		clients              = map[BankID]Clients{}
-		acpAccountsWebClient acpclient.Client
-		acpPaymentsWebClient acpclient.Client
-		bankClient           OpenbankingClient
-		err                  error
-	)
-
-	for _, bank := range config.Banks {
-		if acpAccountsWebClient, err = NewAcpClient(config, bank, "/api/callback"); err != nil {
-			return clients, errors.Wrapf(err, "failed to init acp web client for bank: %s", bank.ID)
-		}
-
-		if acpPaymentsWebClient, err = NewAcpClient(config, bank, "/api/domestic/callback"); err != nil {
-			return clients, errors.Wrapf(err, "failed to init acp web client for bank: %s", bank.ID)
-		}
-
-		if bankClient, err = NewOpenbankingClient(bank); err != nil {
-			return clients, errors.Wrapf(err, "failed to init client for bank: %s", bank.ID)
-		}
-
-		clients[bank.ID] = Clients{
-			AcpAccountsClient:  acpAccountsWebClient,
-			AcpPaymentsClient:  acpPaymentsWebClient,
-			BankClient: bankClient,
-		}
-	}
-
-	return clients, nil
-}
-
 type Server struct {
-	Config       Config
-	Clients      map[BankID]Clients
-	SecureCookie *securecookie.SecureCookie
-	DB           *bolt.DB
-	UserRepo     UserRepo
-	LoginClient  acpclient.Client
-	Validator    *validator.Validate
+	Config            Config
+	Clients           map[BankID]Clients
+	SecureCookie      *securecookie.SecureCookie
+	DB                *bolt.DB
+	UserRepo          UserRepo
+	LoginClient       acpclient.Client
+	Validator         *validator.Validate
+	UserSecureStorage UserSecureStorage
 }
 
 func NewServer() (Server, error) {
@@ -85,8 +48,7 @@ func NewServer() (Server, error) {
 	if server.LoginClient, err = NewLoginClient(server.Config); err != nil {
 		return server, errors.Wrapf(err, "failed to init login client")
 	}
-
-	server.SecureCookie = securecookie.New(securecookie.GenerateRandomKey(64), securecookie.GenerateRandomKey(32))
+	server.SecureCookie = securecookie.New(server.Config.CookieHashKey, server.Config.CookieBlockKey)
 
 	if server.DB, err = InitDB(server.Config); err != nil {
 		return server, errors.Wrapf(err, "failed to init db")
@@ -95,6 +57,8 @@ func NewServer() (Server, error) {
 	if server.UserRepo, err = NewUserRepo(server.DB); err != nil {
 		return server, errors.Wrapf(err, "failed to init user repo")
 	}
+
+	server.UserSecureStorage = NewUserSecureStorage(server.SecureCookie)
 
 	return server, nil
 }
