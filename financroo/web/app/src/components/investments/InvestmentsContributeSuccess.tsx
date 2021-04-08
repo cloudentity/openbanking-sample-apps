@@ -144,7 +144,7 @@ export default function InvestmentsContributeSuccess({
                 Total contribution paid
               </div>
               <div style={{ paddingBottom: 0 }}>
-                <Chip label={`${searchParsed.currency} ${searchParsed.amount}`} className={classes.chip} />
+                <Chip label={`${searchParsed.amount} ${searchParsed.currency}`} className={classes.chip} />
               </div>
             </div>
           </Field>
