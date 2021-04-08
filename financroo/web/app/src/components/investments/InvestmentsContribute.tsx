@@ -95,7 +95,7 @@ export default function InvestmentsContribute() {
     data: balancesRes,
   } = useQuery("fetchBalances", api.fetchBalances, {
     refetchOnWindowFocus: false,
-    retry: false,
+    retry: true,
   });
 
   const {
@@ -104,7 +104,7 @@ export default function InvestmentsContribute() {
     data: accountsRes,
   } = useQuery("fetchAccounts", api.fetchAccounts, {
     refetchOnWindowFocus: false,
-    retry: false,
+    retry: true,
   });
 
   useEffect(() => {
@@ -168,16 +168,16 @@ export default function InvestmentsContribute() {
 
   const accounts = accountsRes?.accounts ?? [];
 
-  useEffect(() => {
-    const bankNeedsReconnect =
-      path(["response", "error", "status"], fetchBanksError) === 401 ||
-      path(["response", "error", "status"], fetchAccountsError) === 401 ||
-      path(["response", "error", "status"], fetchBalancesError) === 401;
+  // useEffect(() => {
+  //   const bankNeedsReconnect =
+  //     path(["response", "error", "status"], fetchBanksError) === 401 ||
+  //     path(["response", "error", "status"], fetchAccountsError) === 401 ||
+  //     path(["response", "error", "status"], fetchBalancesError) === 401;
 
-    if (bankNeedsReconnect) {
-      history.push({ pathname: "/", state: { bankNeedsReconnect } });
-    }
-  }, [fetchBanksError, fetchBalancesError, fetchAccountsError, history]);
+  //   if (bankNeedsReconnect) {
+  //     history.push({ pathname: "/", state: { bankNeedsReconnect } });
+  //   }
+  // }, [fetchBanksError, fetchBalancesError, fetchAccountsError, history]);
 
   return (
     <div style={{ position: "relative" }}>

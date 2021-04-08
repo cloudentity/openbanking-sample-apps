@@ -481,6 +481,10 @@ func (s *Server) IntrospectAccountsToken(c *gin.Context) (*acpClient.IntrospectO
 		return nil, err
 	}
 
+	if !introspectionResponse.Payload.Active {
+		return nil, errors.New("access token is not active")
+	}
+
 	return introspectionResponse.Payload, nil
 }
 
