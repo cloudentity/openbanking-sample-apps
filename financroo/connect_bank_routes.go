@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-openapi/strfmt"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
@@ -74,7 +75,8 @@ func (s *Server) ConnectBank() func(*gin.Context) {
 				WithAid(clients.AcpAccountsClient.ServerID).
 				WithRequest(&models.AccountAccessConsentRequest{
 					Data: &models.AccountAccessConsentRequestData{
-						Permissions: connectRequest.Permissions,
+						Permissions:        connectRequest.Permissions,
+						ExpirationDateTime: strfmt.DateTime(time.Now().Add(time.Hour * 24 * 30)),
 					},
 				}),
 			nil,
