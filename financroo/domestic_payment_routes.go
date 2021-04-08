@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 
 	acpclient "github.com/cloudentity/acp-client-go"
@@ -64,7 +65,7 @@ func (s *Server) CreateDomesticPaymentConsent() func(*gin.Context) {
 			SchemeName:     &schema,
 		}
 		id := uuid.New().String()[:10]
-		currency := "USD"
+		currency := "GBP"
 		if registerResponse, err = clients.AcpPaymentsClient.Openbanking.CreateDomesticPaymentConsent(
 			openbanking.NewCreateDomesticPaymentConsentParams().
 				WithTid(clients.AcpPaymentsClient.TenantID).
@@ -175,9 +176,14 @@ func (s *Server) DomesticPaymentCallback() func(*gin.Context) {
 			return
 		}
 
+		instructedAmount := consentResponse.Payload.Data.Initiation.InstructedAmount
+		amount := url.QueryEscape(*instructedAmount.Amount)
+		currency := url.QueryEscape(*instructedAmount.Currency)
+
 		c.SetCookie("app", "", -1, "/", "", false, true)
 
-		c.Redirect(http.StatusFound, s.Config.UIURL+fmt.Sprintf("/investments/contribute/%s/success", *paymentCreated.Payload.Data.DomesticPaymentID))
+		c.Redirect(http.StatusFound, s.Config.UIURL+fmt.Sprintf("/investments/contribute/%s/success?amount=%s&currency=%s",
+			*paymentCreated.Payload.Data.DomesticPaymentID, amount, currency))
 	}
 }
 
