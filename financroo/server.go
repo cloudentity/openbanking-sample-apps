@@ -15,13 +15,14 @@ import (
 )
 
 type Server struct {
-	Config       Config
-	Clients      map[BankID]Clients
-	SecureCookie *securecookie.SecureCookie
-	DB           *bolt.DB
-	UserRepo     UserRepo
-	LoginClient  acpclient.Client
-	Validator    *validator.Validate
+	Config            Config
+	Clients           map[BankID]Clients
+	SecureCookie      *securecookie.SecureCookie
+	DB                *bolt.DB
+	UserRepo          UserRepo
+	LoginClient       acpclient.Client
+	Validator         *validator.Validate
+	UserSecureStorage UserSecureStorage
 }
 
 func NewServer() (Server, error) {
@@ -56,6 +57,8 @@ func NewServer() (Server, error) {
 	if server.UserRepo, err = NewUserRepo(server.DB); err != nil {
 		return server, errors.Wrapf(err, "failed to init user repo")
 	}
+
+	server.UserSecureStorage = NewUserSecureStorage(server.SecureCookie)
 
 	return server, nil
 }

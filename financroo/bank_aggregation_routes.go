@@ -42,9 +42,7 @@ func (s *Server) WithUser(c *gin.Context) (User, BankTokens, error) {
 		return user, tokens, errors.Wrapf(err, "failed to get user")
 	}
 
-	userStorage := NewUserSecureStorage(s.SecureCookie)
-
-	if tokens, err = userStorage.Read(c); err != nil {
+	if tokens, err = s.UserSecureStorage.Read(c); err != nil {
 		return user, tokens, errors.Wrapf(err, "failed to read user store")
 	}
 

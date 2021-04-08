@@ -123,7 +123,6 @@ func (s *Server) ConnectBankCallback() func(*gin.Context) {
 			return
 		}
 
-		logrus.Infof("connect bank callback: %+v", token)
 		if err = s.ConnectBankForUser(appStorage, token); err != nil {
 			c.String(http.StatusUnauthorized, fmt.Sprintf("failed to exchange code: %+v", err))
 			return
@@ -138,15 +137,14 @@ func (s *Server) ConnectBankCallback() func(*gin.Context) {
 func (s *Server) ConnectedBanks() func(*gin.Context) {
 	return func(c *gin.Context) {
 		var (
-			user              User
-			err               error
-			clients           Clients
-			tokenResponse     *models.TokenResponse
-			ok                bool
-			connectedBanks    = []string{}
-			expiredBanks      = []string{}
-			tokens            = []BankToken{}
-			userSecureStorage = NewUserSecureStorage(s.SecureCookie)
+			user           User
+			err            error
+			clients        Clients
+			tokenResponse  *models.TokenResponse
+			ok             bool
+			connectedBanks = []string{}
+			expiredBanks   = []string{}
+			tokens         = []BankToken{}
 		)
 
 		if user, _, err = s.WithUser(c); err != nil {
@@ -182,7 +180,7 @@ func (s *Server) ConnectedBanks() func(*gin.Context) {
 			return
 		}
 
-		if err = userSecureStorage.Store(c, tokens); err != nil {
+		if err = s.UserSecureStorage.Store(c, tokens); err != nil {
 			c.String(http.StatusInternalServerError, fmt.Sprintf("error while storing user data: %+v", err))
 			return
 		}
