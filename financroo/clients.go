@@ -6,12 +6,10 @@ import (
 	"net/url"
 	"time"
 
+	acpclient "github.com/cloudentity/acp-client-go"
 	obc "github.com/cloudentity/openbanking-sample-apps/client"
 	payments_client "github.com/cloudentity/openbanking-sample-apps/openbanking/paymentinitiation/client"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-
-	acpclient "github.com/cloudentity/acp-client-go"
 )
 
 func NewAcpClient(c Config, cfg BankConfig, redirect string) (acpclient.Client, error) {
@@ -109,8 +107,6 @@ func NewOpenbankingClient(config BankConfig) (OpenbankingClient, error) {
 		[]string{u.Scheme},
 		hc,
 	)
-
-	logrus.WithField("producers", tr.Producers).Info("list producers....")
 
 	c.Openbanking = obc.New(tr, nil)
 	c.OpenbankingPaymentsClient = payments_client.New(tr, nil)

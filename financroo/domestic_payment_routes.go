@@ -54,13 +54,13 @@ func (s *Server) CreateDomesticPaymentConsent() func(*gin.Context) {
 		schema := "UK.OBIE.SortCodeAccountNumber"
 		authorisationType := "Single"
 		account := models.DomesticPaymentConsentCreditorAccount{
-			Identification:          &paymentConsentRequest.PayeeAccountNumber,
-			Name:                    &paymentConsentRequest.PayeeAccountName,
-			SchemeName:              &schema,
+			Identification: &paymentConsentRequest.PayeeAccountNumber,
+			Name:           &paymentConsentRequest.PayeeAccountName,
+			SchemeName:     &schema,
 		}
 		debtorAccount := models.DomesticPaymentConsentDebtorAccount{
 			Identification: &paymentConsentRequest.AccountID,
-			Name: "myAccount", // todo
+			Name:           "myAccount", // todo
 			SchemeName:     &schema,
 		}
 		id := uuid.New().String()[:10]
@@ -71,21 +71,21 @@ func (s *Server) CreateDomesticPaymentConsent() func(*gin.Context) {
 				WithAid(clients.AcpPaymentsClient.ServerID).
 				WithRequest(&models.DomesticPaymentConsentRequest{
 					Data: &models.DomesticPaymentConsentRequestData{
-						Authorisation:     &models.DomesticPaymentConsentAuthorisation{
+						Authorisation: &models.DomesticPaymentConsentAuthorisation{
 							AuthorisationType:  &authorisationType,
 							CompletionDateTime: strfmt.DateTime(time.Now().Add(time.Hour)),
 						},
-						Initiation:        &models.DomesticPaymentConsentDataInitiation{
-							CreditorAccount:           &account,
-							DebtorAccount:             &debtorAccount,
-							EndToEndIdentification:    &id,
-							InstructedAmount:          &models.DomesticPaymentConsentInstructedAmount{
+						Initiation: &models.DomesticPaymentConsentDataInitiation{
+							CreditorAccount:        &account,
+							DebtorAccount:          &debtorAccount,
+							EndToEndIdentification: &id,
+							InstructedAmount: &models.DomesticPaymentConsentInstructedAmount{
 								Amount:   &paymentConsentRequest.Amount,
 								Currency: &currency,
 							},
 							InstructionIdentification: &id,
 							RemittanceInformation: &models.DomesticPaymentConsentRemittanceInformation{
-								Reference: paymentConsentRequest.PaymentReference,
+								Reference:    paymentConsentRequest.PaymentReference,
 								Unstructured: "Unstructured todo", // TODO invoice info?
 							},
 						},
@@ -95,8 +95,7 @@ func (s *Server) CreateDomesticPaymentConsent() func(*gin.Context) {
 				}),
 			nil,
 		); err != nil {
-			errJson, _ := json.Marshal(err) // todo error handling for error mapping
-			c.String(http.StatusBadRequest, fmt.Sprintf("failed to register domestic payment consent: %s", errJson))
+			c.String(http.StatusBadRequest, fmt.Sprintf("failed to register domestic payment consent: %+v", err))
 			return
 		}
 
@@ -107,16 +106,16 @@ func (s *Server) CreateDomesticPaymentConsent() func(*gin.Context) {
 func (s *Server) DomesticPaymentCallback() func(*gin.Context) {
 	return func(c *gin.Context) {
 		var (
-			app        string
-			appStorage = AppStorage{}
-			code       = c.Query("code")
-			state      = c.Query("state")
+			app             string
+			appStorage      = AppStorage{}
+			code            = c.Query("code")
+			state           = c.Query("state")
 			consentResponse *openbanking.GetDomesticPaymentConsentRequestOK
-			initiation obModels.OBWriteDomestic2DataInitiation
-			risk obModels.OBRisk1
-			paymentCreated *domestic_payments.CreateDomesticPaymentsCreated
-			token      acpclient.Token
-			err        error
+			initiation      obModels.OBWriteDomestic2DataInitiation
+			risk            obModels.OBRisk1
+			paymentCreated  *domestic_payments.CreateDomesticPaymentsCreated
+			token           acpclient.Token
+			err             error
 		)
 
 		if c.Query("error") != "" {
@@ -172,14 +171,13 @@ func (s *Server) DomesticPaymentCallback() func(*gin.Context) {
 				},
 				Risk: &risk,
 			}), nil); err != nil {
-			errJson, _ := json.Marshal(err)
-			c.String(http.StatusInternalServerError, fmt.Sprintf("failed to create payment: %s", errJson))
+			c.String(http.StatusInternalServerError, fmt.Sprintf("failed to create payment: %+v", err))
 			return
 		}
 
 		c.SetCookie("app", "", -1, "/", "", false, true)
 
-		c.Redirect(http.StatusFound, s.Config.UIURL + fmt.Sprintf("/investments/contribute/%s/success", *paymentCreated.Payload.Data.DomesticPaymentID))
+		c.Redirect(http.StatusFound, s.Config.UIURL+fmt.Sprintf("/investments/contribute/%s/success", *paymentCreated.Payload.Data.DomesticPaymentID))
 	}
 }
 

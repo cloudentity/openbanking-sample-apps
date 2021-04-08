@@ -500,7 +500,7 @@ func (s *Server) IntrospectPaymentsToken(c *gin.Context) (*acpClient.IntrospectO
 			WithToken(&token),
 		nil,
 	); err != nil {
-		logrus.WithField("err", err.Error()).Errorf("failed to introspect token %s", token)
+		logrus.WithError(err).Errorf("failed to introspect token %s", token)
 		return nil, err
 	}
 
