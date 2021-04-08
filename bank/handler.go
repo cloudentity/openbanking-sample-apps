@@ -382,6 +382,36 @@ func (s *Server) GetBalances() func(ctx *gin.Context) {
 	}
 }
 
+func (s *Server) InternalGetBalances() func(*gin.Context) {
+	return func(c *gin.Context) {
+		var (
+			balances []models.OBReadBalance1DataBalanceItems0
+			sub      = c.Param("sub")
+			err      error
+		)
+
+		if balances, err = s.Storage.GetBalances(sub); err != nil {
+			msg := err.Error()
+			c.JSON(http.StatusNotFound, models.OBErrorResponse1{
+				Message: &msg,
+			})
+			return
+		}
+
+		var balancesPointers []*models. OBReadBalance1DataBalanceItems0
+
+		for _, b := range balances {
+			balancesPointers = append(balancesPointers, &b)
+		}
+
+		c.PureJSON(http.StatusOK, models.OBReadBalance1{
+			Data:  &models.OBReadBalance1Data{
+				Balance: balancesPointers,
+			},
+		})
+	}
+}
+
 func (s *Server) GetTransactions() func(ctx *gin.Context) {
 	return func(c *gin.Context) {
 		var (
