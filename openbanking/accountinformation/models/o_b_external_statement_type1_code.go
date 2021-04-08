@@ -19,6 +19,11 @@ import (
 // swagger:model OBExternalStatementType1Code
 type OBExternalStatementType1Code string
 
+func NewOBExternalStatementType1Code(value OBExternalStatementType1Code) *OBExternalStatementType1Code {
+	v := value
+	return &v
+}
+
 const (
 
 	// OBExternalStatementType1CodeAccountClosure captures enum value "AccountClosure"

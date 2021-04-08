@@ -19,6 +19,11 @@ import (
 // swagger:model OBBalanceType1Code
 type OBBalanceType1Code string
 
+func NewOBBalanceType1Code(value OBBalanceType1Code) *OBBalanceType1Code {
+	v := value
+	return &v
+}
+
 const (
 
 	// OBBalanceType1CodeClosingAvailable captures enum value "ClosingAvailable"

@@ -19,6 +19,11 @@ import (
 // swagger:model OBExternalScheduleType1Code
 type OBExternalScheduleType1Code string
 
+func NewOBExternalScheduleType1Code(value OBExternalScheduleType1Code) *OBExternalScheduleType1Code {
+	v := value
+	return &v
+}
+
 const (
 
 	// OBExternalScheduleType1CodeArrival captures enum value "Arrival"

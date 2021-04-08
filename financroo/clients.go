@@ -6,13 +6,12 @@ import (
 	"net/url"
 	"time"
 
+	acpclient "github.com/cloudentity/acp-client-go"
 	"github.com/cloudentity/acp-client-go/client/oauth2"
 	"github.com/cloudentity/acp-client-go/models"
 	obc "github.com/cloudentity/openbanking-sample-apps/client"
-	httptransport "github.com/go-openapi/runtime/client"
+	payments_client "github.com/cloudentity/openbanking-sample-apps/openbanking/paymentinitiation/client"
 	"github.com/pkg/errors"
-
-	acpclient "github.com/cloudentity/acp-client-go"
 )
 
 type Clients struct {
@@ -140,6 +139,8 @@ func NewLoginClient(c Config) (acpclient.Client, error) {
 
 type OpenbankingClient struct {
 	*obc.Openbanking
+
+	*payments_client.OpenbankingPaymentsClient
 }
 
 func NewOpenbankingClient(config BankConfig) (OpenbankingClient, error) {
@@ -154,12 +155,15 @@ func NewOpenbankingClient(config BankConfig) (OpenbankingClient, error) {
 		return c, errors.Wrapf(err, "failed to parse bank url")
 	}
 
-	c.Openbanking = obc.New(httptransport.NewWithClient(
+	tr := NewHTTPRuntimeWithClient(
 		u.Host,
 		"/",
 		[]string{u.Scheme},
 		hc,
-	), nil)
+	)
+
+	c.Openbanking = obc.New(tr, nil)
+	c.OpenbankingPaymentsClient = payments_client.New(tr, nil)
 
 	return c, nil
 }

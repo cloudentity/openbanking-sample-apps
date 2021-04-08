@@ -19,6 +19,11 @@ import (
 // swagger:model OB_Period1Code
 type OBPeriod1Code string
 
+func NewOBPeriod1Code(value OBPeriod1Code) *OBPeriod1Code {
+	v := value
+	return &v
+}
+
 const (
 
 	// OBPeriod1CodePACT captures enum value "PACT"

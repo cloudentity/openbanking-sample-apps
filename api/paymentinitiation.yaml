@@ -16,9 +16,11 @@ schemes:
 consumes:
   - application/json; charset=utf-8
   - application/jose+jwe
+  - application/json
 produces:
   - application/json; charset=utf-8
   - application/jose+jwe
+  - application/json
 paths:
   /domestic-payment-consents:
     post:
@@ -1683,8 +1685,8 @@ parameters:
     type: string
     required: false
     description: |-
-      The time when the PSU last logged in with the TPP. 
-      All dates in the HTTP headers are represented as RFC 7231 Full Dates. An example is below: 
+      The time when the PSU last logged in with the TPP.
+      All dates in the HTTP headers are represented as RFC 7231 Full Dates. An example is below:
       Sun, 10 Sep 2017 19:43:31 UTC
     pattern: '^(Mon|Tue|Wed|Thu|Fri|Sat|Sun), \d{2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{4} \d{2}:\d{2}:\d{2} (GMT|UTC)$'
   x-fapi-interaction-id:
@@ -1701,7 +1703,6 @@ parameters:
       Idempotency Key will be valid for 24 hours.
     required: true
     type: string
-    pattern: '^(\S)(.*)(\S)$'
     maxLength: 40
   x-jws-signature:
     in: header

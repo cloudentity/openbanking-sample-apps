@@ -19,6 +19,11 @@ import (
 // swagger:model OBExternalDirectDebitStatus1Code
 type OBExternalDirectDebitStatus1Code string
 
+func NewOBExternalDirectDebitStatus1Code(value OBExternalDirectDebitStatus1Code) *OBExternalDirectDebitStatus1Code {
+	v := value
+	return &v
+}
+
 const (
 
 	// OBExternalDirectDebitStatus1CodeActive captures enum value "Active"

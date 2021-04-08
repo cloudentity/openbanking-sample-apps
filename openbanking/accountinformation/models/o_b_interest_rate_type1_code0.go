@@ -19,6 +19,11 @@ import (
 // swagger:model OB_InterestRateType1Code_0
 type OBInterestRateType1Code0 string
 
+func NewOBInterestRateType1Code0(value OBInterestRateType1Code0) *OBInterestRateType1Code0 {
+	v := value
+	return &v
+}
+
 const (
 
 	// OBInterestRateType1Code0INBB captures enum value "INBB"

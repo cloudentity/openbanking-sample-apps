@@ -19,6 +19,11 @@ import (
 // swagger:model OBExternalPartyType1Code
 type OBExternalPartyType1Code string
 
+func NewOBExternalPartyType1Code(value OBExternalPartyType1Code) *OBExternalPartyType1Code {
+	v := value
+	return &v
+}
+
 const (
 
 	// OBExternalPartyType1CodeDelegate captures enum value "Delegate"

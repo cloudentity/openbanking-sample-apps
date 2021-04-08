@@ -24,6 +24,7 @@ RUN go mod download
 
 COPY client client
 COPY models models
+COPY openbanking openbanking
 COPY financroo .
 RUN --mount=type=cache,target=/root/.cache/go-build,mode=777 \
     CGO_ENABLED=0 go build -tags static_all -o main .

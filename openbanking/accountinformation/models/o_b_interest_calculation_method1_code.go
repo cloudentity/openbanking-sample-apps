@@ -19,6 +19,11 @@ import (
 // swagger:model OB_InterestCalculationMethod1Code
 type OBInterestCalculationMethod1Code string
 
+func NewOBInterestCalculationMethod1Code(value OBInterestCalculationMethod1Code) *OBInterestCalculationMethod1Code {
+	v := value
+	return &v
+}
+
 const (
 
 	// OBInterestCalculationMethod1CodeITCO captures enum value "ITCO"

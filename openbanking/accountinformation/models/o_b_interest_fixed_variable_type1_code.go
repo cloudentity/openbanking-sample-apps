@@ -19,6 +19,11 @@ import (
 // swagger:model OB_InterestFixedVariableType1Code
 type OBInterestFixedVariableType1Code string
 
+func NewOBInterestFixedVariableType1Code(value OBInterestFixedVariableType1Code) *OBInterestFixedVariableType1Code {
+	v := value
+	return &v
+}
+
 const (
 
 	// OBInterestFixedVariableType1CodeINFI captures enum value "INFI"

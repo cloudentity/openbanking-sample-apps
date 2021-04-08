@@ -19,6 +19,11 @@ import (
 // swagger:model OB_FeeType1Code
 type OBFeeType1Code string
 
+func NewOBFeeType1Code(value OBFeeType1Code) *OBFeeType1Code {
+	v := value
+	return &v
+}
+
 const (
 
 	// OBFeeType1CodeFEPF captures enum value "FEPF"
