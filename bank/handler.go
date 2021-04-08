@@ -401,7 +401,8 @@ func (s *Server) InternalGetBalances() func(*gin.Context) {
 		var balancesPointers []*models. OBReadBalance1DataBalanceItems0
 
 		for _, b := range balances {
-			balancesPointers = append(balancesPointers, &b)
+			balance := b
+			balancesPointers = append(balancesPointers, &balance)
 		}
 
 		c.PureJSON(http.StatusOK, models.OBReadBalance1{
