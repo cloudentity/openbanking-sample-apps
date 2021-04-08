@@ -9,7 +9,7 @@ import Progress from "./Progress";
 import PageContent from "./common/PageContent";
 import PageContainer from "./common/PageContainer";
 import { pathOr } from "ramda";
-import { useLocation } from "react-router";
+import { useLocation, useHistory } from "react-router";
 import Snackbar from "@material-ui/core/Snackbar";
 import IconButton from "@material-ui/core/IconButton";
 import CloseIcon from "@material-ui/icons/Close";
@@ -36,6 +36,7 @@ export default function Dashboard({
   const [isProgress, setProgress] = useState(false);
   const [snackbar, setSnackbar] = useState("");
   const classes = useStyles();
+  const history = useHistory();
 
   const {
     state,
@@ -44,6 +45,7 @@ export default function Dashboard({
   useEffect(() => {
     if (state?.bankNeedsReconnect) {
       setSnackbar("Error: unauthorized. Bank needs reconnect");
+      history.replace({ state: { bankNeedsReconnect: false } } );
     }
   }, [state]);
 
