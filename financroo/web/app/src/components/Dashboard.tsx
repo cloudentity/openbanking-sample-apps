@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import PageToolbar from "./common/PageToolbar";
 import Connected from "./Connected";
 import Welcome from "./Welcome";
@@ -15,6 +15,8 @@ import IconButton from "@material-ui/core/IconButton";
 import CloseIcon from "@material-ui/icons/Close";
 import Alert from "@material-ui/lab/Alert";
 import { makeStyles } from "@material-ui/core/styles";
+// import InvestmentsDialog from "./InvestmentsDialog";
+// import AcccountsAddedDialog from "./AccountsAddedDialog";
 
 const useStyles = makeStyles(() => ({
   alert: {
@@ -37,6 +39,8 @@ export default function Dashboard({
   const [snackbar, setSnackbar] = useState("");
   const classes = useStyles();
   const history = useHistory();
+  // const [hintDialog, setHintDialog] = useState(false);
+  // const [accountAddedDialog, setAccountAddedDialog] = useState(false);
 
   const {
     state,
@@ -45,7 +49,7 @@ export default function Dashboard({
   useEffect(() => {
     if (state?.bankNeedsReconnect) {
       setSnackbar("Error: unauthorized. Bank needs reconnect");
-      history.replace({ state: { bankNeedsReconnect: false } } );
+      history.replace({ state: { bankNeedsReconnect: false } });
     }
   }, [state]);
 
@@ -58,7 +62,16 @@ export default function Dashboard({
     retry: false,
   });
 
-  const banks = banksRes ? pathOr([], ["connected_banks"], banksRes) : [];
+  const banks = useMemo(() => {
+    return banksRes ? pathOr([], ["connected_banks"], banksRes) : [];
+  }, [banksRes]);
+
+  // useEffect(() => {
+  //   if (banks) {
+  //     setAccountAddedDialog(true);
+  //     setHintDialog(true);
+  //   }
+  // }, [banks]);
 
   const handleAllowAccess = ({ bankId, permissions }) => {
     setProgress(true);
@@ -154,6 +167,12 @@ export default function Dashboard({
           {snackbar}
         </Alert>
       </Snackbar>
+
+      {/* <InvestmentsDialog open={hintDialog} setOpen={setHintDialog} />
+      <AcccountsAddedDialog
+        open={accountAddedDialog}
+        setOpen={setAccountAddedDialog}
+      /> */}
     </div>
   );
 }
