@@ -4,7 +4,6 @@ import { makeStyles } from "@material-ui/core/styles";
 import { ArrowLeft, Lock } from "react-feather";
 import { useHistory } from "react-router";
 import { useQuery } from "react-query";
-import { path } from "ramda";
 
 import PageContainer from "../common/PageContainer";
 import PageToolbar, { subHeaderHeight } from "../common/PageToolbar";
@@ -14,6 +13,7 @@ import InvestmentsContributeSummary from "./InvestmentsContributeSummary";
 import { api } from "../../api/api";
 import Progress from "../Progress";
 import { banks as banksArray } from "../banks";
+import InvestmentsContributeRedirecting from "./InvestmentsContributeRedirecting";
 
 export type BalanceType = {
   AccountId: string;
@@ -120,22 +120,25 @@ export default function InvestmentsContribute() {
   }
 
   function handleNext() {
-    if (step === 2) {
+    if (step === 3) {
       setProgress(true);
 
-      api.domesticPaymentConsent({
-        amount: amount,
-        bank_id: bank,
-        account_id: account,
-        payee_account_name: "financroo-investment",
-        payee_account_number: "12345678",
-        payee_account_sort_code: "123456",
-        payment_reference: "financroo-investment-123"
-      }).then(res => {
-        window.location.href = res.login_url
-      }).finally(() => {
-        setProgress(false);
-      })
+      api
+        .domesticPaymentConsent({
+          amount: amount,
+          bank_id: bank,
+          account_id: account,
+          payee_account_name: "financroo-investment",
+          payee_account_number: "12345678",
+          payee_account_sort_code: "123456",
+          payment_reference: "financroo-investment-123",
+        })
+        .then((res) => {
+          window.location.href = res.login_url;
+        })
+        .finally(() => {
+          setProgress(false);
+        });
       //history.push("/investments/contribute/mock-id/success");
     } else {
       setStep((step) => step + 1);
@@ -251,6 +254,9 @@ export default function InvestmentsContribute() {
               balances={balances}
               accounts={accounts}
             />
+          )}
+          {step === 3 && (
+            <InvestmentsContributeRedirecting handleNext={handleNext} />
           )}
           <div className={classes.spacer} />
           <div className={classes.footer}>
