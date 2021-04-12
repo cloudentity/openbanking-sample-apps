@@ -15,8 +15,7 @@ import IconButton from "@material-ui/core/IconButton";
 import CloseIcon from "@material-ui/icons/Close";
 import Alert from "@material-ui/lab/Alert";
 import { makeStyles } from "@material-ui/core/styles";
-// import InvestmentsDialog from "./InvestmentsDialog";
-// import AcccountsAddedDialog from "./AccountsAddedDialog";
+import AcccountsAddedDialog from "./AccountsAddedDialog";
 
 const useStyles = makeStyles(() => ({
   alert: {
@@ -29,6 +28,10 @@ const useStyles = makeStyles(() => ({
   },
 }));
 
+function useQueryParams() {
+  return new URLSearchParams(useLocation().search);
+}
+
 export default function Dashboard({
   authorizationServerURL,
   authorizationServerId,
@@ -39,9 +42,10 @@ export default function Dashboard({
   const [snackbar, setSnackbar] = useState("");
   const classes = useStyles();
   const history = useHistory();
-  // const [hintDialog, setHintDialog] = useState(false);
-  // const [accountAddedDialog, setAccountAddedDialog] = useState(false);
-
+  const queryParams = useQueryParams();
+  const [accountAddedDialog, setAccountAddedDialog] = useState<boolean | null>(
+    null
+  );
   const {
     state,
   }: { state: undefined | { bankNeedsReconnect: boolean } } = useLocation();
@@ -51,6 +55,7 @@ export default function Dashboard({
       setSnackbar("Error: unauthorized. Bank needs reconnect");
       history.replace({ state: { bankNeedsReconnect: false } });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);
 
   const {
@@ -66,12 +71,22 @@ export default function Dashboard({
     return banksRes ? pathOr([], ["connected_banks"], banksRes) : [];
   }, [banksRes]);
 
-  // useEffect(() => {
-  //   if (banks) {
-  //     setAccountAddedDialog(true);
-  //     setHintDialog(true);
-  //   }
-  // }, [banks]);
+  useEffect(() => {
+    if (queryParams.get("connected") === "yes") {
+      setAccountAddedDialog(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (accountAddedDialog === false) {
+      queryParams.delete("connected");
+      history.replace({
+        search: queryParams.toString(),
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accountAddedDialog]);
 
   const handleAllowAccess = ({ bankId, permissions }) => {
     setProgress(true);
@@ -168,11 +183,10 @@ export default function Dashboard({
         </Alert>
       </Snackbar>
 
-      {/* <InvestmentsDialog open={hintDialog} setOpen={setHintDialog} />
       <AcccountsAddedDialog
-        open={accountAddedDialog}
+        open={accountAddedDialog === null ? false : accountAddedDialog}
         setOpen={setAccountAddedDialog}
-      /> */}
+      />
     </div>
   );
 }
