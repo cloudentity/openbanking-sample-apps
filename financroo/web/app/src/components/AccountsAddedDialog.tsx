@@ -6,6 +6,7 @@ import Dialog from "@material-ui/core/Dialog";
 import financrooLogo from "../assets/financroo-logo.svg";
 import icon from "../assets/icon-check.svg";
 import { Button } from "@material-ui/core";
+import { useHistory } from "react-router";
 
 const useStyles = makeStyles((theme) => ({
   dialog: {
@@ -14,13 +15,13 @@ const useStyles = makeStyles((theme) => ({
   },
   dialogContent: {
     backgroundColor: "#F7FAFF",
-    padding: "48px 118px",
+    padding: "48px 80px",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
     "& > div": {
-      width: 220,
+      width: 280,
       textAlign: "center",
       marginTop: 16,
       fontSize: 16,
@@ -65,6 +66,7 @@ const useStyles = makeStyles((theme) => ({
 
 export default function AcccountsAddedDialog({ open, setOpen }) {
   const classes = useStyles();
+  const history = useHistory();
 
   return (
     <Dialog onClose={() => setOpen(false)} open={open}>
@@ -82,18 +84,26 @@ export default function AcccountsAddedDialog({ open, setOpen }) {
           Your <strong>Go Bank</strong> account(s) has been successfully
           connected to Financroo
         </div>
+        <div>
+          Now you can use Financroo <br />
+          to make investments!
+        </div>
       </div>
       <div className={classes.dialogButtons}>
-        <Button variant="outlined" style={{ marginRight: 16 }}>
-          Link another?
+        <Button
+          variant="outlined"
+          style={{ marginRight: 16 }}
+          onClick={() => setOpen(false)}
+        >
+          Cancel
         </Button>
         <Button
           variant="outlined"
           onClick={() => {
-            setOpen(false);
+            history.push("/investments");
           }}
         >
-          Continue
+          Start investing
         </Button>
       </div>
     </Dialog>
