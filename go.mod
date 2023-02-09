@@ -6,7 +6,7 @@ require (
 	github.com/caarlos0/env/v6 v6.4.0
 	github.com/cloudentity/acp-client-go v0.0.0-20210407134811-d5a489da08a3
 	github.com/dgrijalva/jwt-go v3.2.1-0.20200107013213-dc14462fd587+incompatible
-	github.com/gin-gonic/gin v1.6.3
+	github.com/gin-gonic/gin v1.7.7
 	github.com/go-openapi/errors v0.19.9
 	github.com/go-openapi/runtime v0.19.24
 	github.com/go-openapi/strfmt v0.19.11
